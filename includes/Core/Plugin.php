@@ -61,6 +61,8 @@ class Plugin {
 		require_once $base . 'Search/SearchRouter.php';
 
 		require_once $base . 'Recommendation/ProductRanker.php';
+		require_once $base . 'Fitment/FitmentHelper.php';
+		require_once $base . 'Support/SupportHelper.php';
 		require_once $base . 'Rules/RulesManager.php';
 
 		require_once $base . 'REST/ChatController.php';

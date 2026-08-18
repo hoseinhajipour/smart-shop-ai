@@ -1,6 +1,8 @@
 <?php
 namespace SmartShopAI\Recommendation;
 
+use SmartShopAI\Fitment\FitmentHelper;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -14,11 +16,16 @@ class ProductRanker {
 	 * Score weights for ranking criteria.
 	 */
 	private const WEIGHTS = array(
-		'vehicle'      => 30,
-		'size'         => 25,
-		'color'        => 15,
-		'brand'        => 15,
-		'product_type' => 10,
+		'pcd'          => 35,
+		'vehicle'      => 25,
+		'size'         => 20,
+		'et'           => 15,
+		'color'        => 10,
+		'brand'        => 10,
+		'style'        => 10,
+		'width'        => 10,
+		'diameter'     => 10,
+		'product_type' => 5,
 		'in_stock'     => 5,
 	);
 
@@ -48,6 +55,20 @@ class ProductRanker {
 			implode( ' ', $prod_attrs ) . ' ' .
 			( $product['short_description'] ?? '' )
 		);
+
+		// PCD / bolt pattern match (highest priority for vehicle fitment).
+		if ( ! empty( $attrs['pcd'] ) ) {
+			if ( FitmentHelper::text_contains_pcd( $prod_text, $attrs['pcd'] ) ) {
+				$score += self::WEIGHTS['pcd'];
+			} else {
+				foreach ( $prod_attrs as $val ) {
+					if ( FitmentHelper::text_contains_pcd( (string) $val, $attrs['pcd'] ) ) {
+						$score += self::WEIGHTS['pcd'];
+						break;
+					}
+				}
+			}
+		}
 
 		// Vehicle match.
 		if ( ! empty( $intent['vehicle'] ) ) {
@@ -105,11 +126,59 @@ class ProductRanker {
 			}
 		}
 
-		// Brand match.
+		// ET / offset match.
+		if ( ! empty( $attrs['et'] ) ) {
+			$et = FitmentHelper::normalize_et( (string) $attrs['et'] );
+			if (
+				mb_strpos( $prod_text, 'et' . $et ) !== false ||
+				mb_strpos( $prod_text, 'et ' . $et ) !== false ||
+				mb_strpos( $prod_text, 'offset ' . $et ) !== false ||
+				preg_match( '/\b' . preg_quote( $et, '/' ) . '\s*mm\b/i', $prod_text )
+			) {
+				$score += self::WEIGHTS['et'];
+			}
+		}
+
+		// Width match.
+		if ( ! empty( $attrs['width'] ) ) {
+			$width = $attrs['width'];
+			if ( mb_strpos( $prod_text, (string) $width ) !== false ) {
+				$score += self::WEIGHTS['width'];
+			}
+		}
+
+		// Diameter match.
+		if ( ! empty( $attrs['diameter'] ) ) {
+			$diameter = $attrs['diameter'];
+			if ( mb_strpos( $prod_text, (string) $diameter ) !== false ) {
+				$score += self::WEIGHTS['diameter'];
+			}
+		}
+
+		// Brand match (attributes, name, or product category).
 		if ( ! empty( $attrs['brand'] ) ) {
 			$brand = mb_strtolower( $attrs['brand'] );
-			if ( mb_strpos( $prod_text, $brand ) !== false ) {
+			$found = mb_strpos( $prod_text, $brand ) !== false;
+
+			if ( ! $found && ! empty( $product['categories'] ) ) {
+				foreach ( (array) $product['categories'] as $category ) {
+					if ( mb_strpos( mb_strtolower( (string) $category ), $brand ) !== false ) {
+						$found = true;
+						break;
+					}
+				}
+			}
+
+			if ( $found ) {
 				$score += self::WEIGHTS['brand'];
+			}
+		}
+
+		// Style/model match.
+		if ( ! empty( $attrs['style'] ) ) {
+			$style = mb_strtolower( $attrs['style'] );
+			if ( mb_strpos( $prod_text, $style ) !== false ) {
+				$score += self::WEIGHTS['style'];
 			}
 		}
 

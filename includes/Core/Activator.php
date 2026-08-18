@@ -93,6 +93,7 @@ class Activator {
 			'float_button_offset_x'     => 24,
 			'float_button_offset_y'     => 24,
 			'float_button_size'         => 56,
+			'chatbot_support'           => Settings::get_default_support_settings(),
 		);
 
 		foreach ( $defaults as $key => $value ) {

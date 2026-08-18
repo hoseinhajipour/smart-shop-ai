@@ -67,4 +67,28 @@ class ConversationLogger {
 		$table = $wpdb->prefix . 'ssai_conversation_logs';
 		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
 	}
+
+	public static function delete_log( int $id ): bool {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ssai_conversation_logs';
+
+		$deleted = $wpdb->delete( $table, array( 'id' => $id ), array( '%d' ) );
+		return (bool) $deleted;
+	}
+
+	public static function delete_logs( array $ids ): int {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ssai_conversation_logs';
+
+		$ids = array_filter( array_map( 'intval', $ids ) );
+		if ( empty( $ids ) ) {
+			return 0;
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", ...$ids );
+
+		return (int) $wpdb->query( $sql );
+	}
 }

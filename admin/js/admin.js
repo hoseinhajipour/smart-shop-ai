@@ -18,7 +18,14 @@
         ...(options.headers || {}),
       },
     });
-    return response.json();
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = data.message || data.error || ('Request failed: ' + response.status);
+      throw new Error(message);
+    }
+
+    return data;
   }
 
   function showResult(el, success, message) {
@@ -69,6 +76,18 @@
     const customPresetRow = document.getElementById('ssai-custom-endpoint-preset-row');
     const customPresetSelect = document.getElementById('custom_endpoint_preset');
     const CUSTOM_MODEL_VALUE = '__custom__';
+    const apiKeyInput = document.getElementById('api_key');
+    const toggleApiKeyBtn = document.getElementById('ssai-toggle-api-key');
+
+    if (apiKeyInput && toggleApiKeyBtn) {
+      toggleApiKeyBtn.addEventListener('click', () => {
+        const isHidden = apiKeyInput.type === 'password';
+        apiKeyInput.type = isHidden ? 'text' : 'password';
+        toggleApiKeyBtn.textContent = isHidden ? 'Hide' : 'Show';
+        toggleApiKeyBtn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+        toggleApiKeyBtn.setAttribute('aria-label', isHidden ? 'Hide API key' : 'Show API key');
+      });
+    }
 
     function getSelectedModel() {
       if (!modelSelect) return '';
@@ -200,20 +219,45 @@
       });
     }
 
-    api('/settings/ai').then((data) => {
+    function loadAiSettings(data) {
+      if (!data) return;
+
       if (data.provider) {
         providerSelect.value = data.provider === 'openai_compatible' ? 'custom' : data.provider;
       }
       if (data.endpoint) endpointInput.value = data.endpoint;
-      if (data.temperature) document.getElementById('temperature').value = data.temperature;
-      if (data.max_tokens) document.getElementById('max_tokens').value = data.max_tokens;
-      if (data.timeout) document.getElementById('timeout').value = data.timeout;
+      if (data.temperature !== undefined) document.getElementById('temperature').value = data.temperature;
+      if (data.max_tokens !== undefined) document.getElementById('max_tokens').value = data.max_tokens;
+      if (data.timeout !== undefined) document.getElementById('timeout').value = data.timeout;
+
+      const apiKeyField = document.getElementById('api_key');
+      if (apiKeyField) {
+        apiKeyField.value = '';
+        apiKeyField.placeholder = data.api_key_masked
+          ? 'Saved: ' + data.api_key_masked + ' (leave blank to keep)'
+          : 'Enter API key';
+        apiKeyField.type = 'password';
+      }
+
+      if (toggleApiKeyBtn) {
+        toggleApiKeyBtn.textContent = 'Show';
+        toggleApiKeyBtn.setAttribute('aria-pressed', 'false');
+        toggleApiKeyBtn.setAttribute('aria-label', 'Show API key');
+      }
+
       applyProviderPreset(data.provider || 'openai', true);
+
       if (data.model) {
         populateModelOptions([{ id: data.model, label: data.model }], data.model);
       } else {
         ensureCustomModelOption();
       }
+    }
+
+    api('/settings/ai').then((data) => {
+      loadAiSettings(data);
+    }).catch((err) => {
+      alert('Could not load AI settings: ' + err.message);
     });
 
     if (fetchModelsBtn) {
@@ -261,11 +305,32 @@
 
     aiForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const formData = new FormData(aiForm);
-      const body = Object.fromEntries(formData.entries());
-      body.model = getSelectedModel();
-      await api('/settings/ai', { method: 'POST', body: JSON.stringify(body) });
-      alert('Settings saved.');
+
+      const model = getSelectedModel();
+      if (!model) {
+        alert('Please select or enter a model.');
+        return;
+      }
+
+      const body = {
+        provider: providerSelect.value,
+        endpoint: endpointInput.value.trim(),
+        api_key: document.getElementById('api_key').value.trim(),
+        model: model,
+        temperature: parseFloat(document.getElementById('temperature').value),
+        max_tokens: parseInt(document.getElementById('max_tokens').value, 10),
+        timeout: parseInt(document.getElementById('timeout').value, 10),
+      };
+
+      try {
+        const result = await api('/settings/ai', { method: 'POST', body: JSON.stringify(body) });
+        if (result.settings) {
+          loadAiSettings(result.settings);
+        }
+        alert('Settings saved.');
+      } catch (err) {
+        alert('Failed to save settings: ' + err.message);
+      }
     });
 
     const testBtn = document.getElementById('ssai-test-ai');
@@ -352,11 +417,15 @@
       const mapping = data.mapping || {};
       const suggestions = data.suggestions || {};
       const attributes = data.attributes || [];
+      const categories = data.categories || [];
 
       semanticKeys.forEach((key) => {
         const tr = document.createElement('tr');
         const tdLabel = document.createElement('td');
         tdLabel.textContent = key.replace(/_/g, ' ');
+        if (key === 'brand') {
+          tdLabel.title = 'Can be mapped to a product category (e.g. ARCHER, KMC)';
+        }
 
         const tdSelect = document.createElement('td');
         const select = document.createElement('select');
@@ -368,15 +437,33 @@
         emptyOpt.textContent = '— Select —';
         select.appendChild(emptyOpt);
 
-        attributes.forEach((attr) => {
-          const opt = document.createElement('option');
-          opt.value = attr.taxonomy;
-          opt.textContent = attr.label + ' (' + attr.taxonomy + ')';
-          if (mapping[key] === attr.taxonomy || suggestions[key] === attr.taxonomy) {
-            opt.selected = true;
+        if (attributes.length > 0) {
+          const attrGroup = document.createElement('optgroup');
+          attrGroup.label = 'Global Attributes';
+          attributes.forEach((attr) => {
+            const opt = document.createElement('option');
+            opt.value = attr.taxonomy;
+            opt.textContent = attr.label + ' (' + attr.taxonomy + ')';
+            if (mapping[key] === attr.taxonomy || suggestions[key] === attr.taxonomy) {
+              opt.selected = true;
+            }
+            attrGroup.appendChild(opt);
+          });
+          select.appendChild(attrGroup);
+        }
+
+        if (categories.length > 0) {
+          const catGroup = document.createElement('optgroup');
+          catGroup.label = 'Product Categories';
+          const catOpt = document.createElement('option');
+          catOpt.value = 'product_cat';
+          catOpt.textContent = 'Product Categories (product_cat)';
+          if (mapping[key] === 'product_cat' || suggestions[key] === 'product_cat') {
+            catOpt.selected = true;
           }
-          select.appendChild(opt);
-        });
+          catGroup.appendChild(catOpt);
+          select.appendChild(catGroup);
+        }
 
         tdSelect.appendChild(select);
         tr.appendChild(tdLabel);
@@ -394,6 +481,23 @@
             '<div class="ssai-attribute-terms">' + attr.term_count + ' terms</div>';
           discovered.appendChild(div);
         });
+
+        if (categories.length > 0) {
+          const catHeader = document.createElement('div');
+          catHeader.className = 'ssai-attribute-item';
+          catHeader.innerHTML = '<div class="ssai-attribute-name"><strong>Product Categories</strong> (product_cat)</div>' +
+            '<div class="ssai-attribute-terms">' + categories.length + ' categories</div>';
+          discovered.appendChild(catHeader);
+
+          categories.slice(0, 50).forEach((cat) => {
+            const div = document.createElement('div');
+            div.className = 'ssai-attribute-item';
+            div.style.marginLeft = '16px';
+            div.innerHTML = '<div class="ssai-attribute-name">' + cat.label + ' (' + cat.slug + ')</div>' +
+              '<div class="ssai-attribute-terms">' + cat.term_count + ' products</div>';
+            discovered.appendChild(div);
+          });
+        }
       }
     });
 
@@ -515,6 +619,107 @@
       };
     }
 
+    const SUPPORT_TYPES = {
+      phone: 'Phone',
+      whatsapp: 'WhatsApp',
+      instagram: 'Instagram',
+      telegram: 'Telegram',
+      email: 'Email',
+      custom: 'Custom Link',
+    };
+
+    const supportChannelsEditor = document.getElementById('ssai-support-channels-editor');
+    const supportEnabledEl = document.getElementById('support_enabled');
+
+    function toggleSupportFields() {
+      const show = supportEnabledEl && supportEnabledEl.checked;
+      document.querySelectorAll('.ssai-support-field').forEach((el) => {
+        el.style.display = show ? '' : 'none';
+      });
+      if (supportChannelsEditor) {
+        supportChannelsEditor.style.display = show ? '' : 'none';
+      }
+    }
+
+    function renderSupportChannelsEditor(channels) {
+      if (!supportChannelsEditor) return;
+      supportChannelsEditor.innerHTML = '';
+
+      (channels || []).forEach((channel, index) => {
+        const row = document.createElement('div');
+        row.className = 'ssai-support-channel-row';
+
+        let typeOptions = '';
+        Object.entries(SUPPORT_TYPES).forEach(([key, label]) => {
+          typeOptions += '<option value="' + key + '"' + (channel.type === key ? ' selected' : '') + '>' + label + '</option>';
+        });
+
+        row.innerHTML =
+          '<div class="ssai-support-channel-field">' +
+            '<label>Type</label>' +
+            '<select class="ssai-support-input" data-field="type">' + typeOptions + '</select>' +
+          '</div>' +
+          '<div class="ssai-support-channel-field">' +
+            '<label>Label</label>' +
+            '<input type="text" class="regular-text ssai-support-input" data-field="label" value="' + escapeHtml(channel.label || '') + '" placeholder="e.g. WhatsApp Support" />' +
+          '</div>' +
+          '<div class="ssai-support-channel-field ssai-support-channel-value">' +
+            '<label>Value</label>' +
+            '<input type="text" class="regular-text ssai-support-input" data-field="value" value="' + escapeHtml(channel.value || '') + '" placeholder="Phone, @username, or URL" />' +
+          '</div>' +
+          '<button type="button" class="button ssai-remove-support-channel" data-index="' + index + '" aria-label="Remove channel">&times;</button>';
+
+        supportChannelsEditor.appendChild(row);
+      });
+
+      supportChannelsEditor.querySelectorAll('.ssai-remove-support-channel').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const channels = getSupportChannels();
+          channels.splice(parseInt(btn.dataset.index, 10), 1);
+          renderSupportChannelsEditor(channels);
+        });
+      });
+    }
+
+    function getSupportChannels() {
+      if (!supportChannelsEditor) return [];
+      const rows = supportChannelsEditor.querySelectorAll('.ssai-support-channel-row');
+      const channels = [];
+
+      rows.forEach((row) => {
+        const type = row.querySelector('[data-field="type"]')?.value || '';
+        const label = row.querySelector('[data-field="label"]')?.value.trim() || '';
+        const value = row.querySelector('[data-field="value"]')?.value.trim() || '';
+        if (!type || !value) return;
+        channels.push({ type, label, value });
+      });
+
+      return channels;
+    }
+
+    function getSupportSettings() {
+      return {
+        enabled: supportEnabledEl ? supportEnabledEl.checked : false,
+        title: document.getElementById('support_title')?.value.trim() || 'Contact Support',
+        message: document.getElementById('support_message')?.value.trim() || '',
+        channels: getSupportChannels(),
+      };
+    }
+
+    if (supportEnabledEl) {
+      supportEnabledEl.addEventListener('change', toggleSupportFields);
+    }
+
+    const addSupportBtn = document.getElementById('ssai-add-support-channel');
+    if (addSupportBtn) {
+      addSupportBtn.addEventListener('click', () => {
+        const channels = getSupportChannels();
+        channels.push({ type: 'whatsapp', label: 'WhatsApp', value: '' });
+        renderSupportChannelsEditor(channels);
+        toggleSupportFields();
+      });
+    }
+
     function updatePreview() {
       if (!preview) return;
       const app = getAppearance();
@@ -616,6 +821,17 @@
       if (data.welcome) document.getElementById('chatbot_welcome').value = data.welcome;
       renderQuickActionsEditor(data.quick_actions || defaultQuickActions);
 
+      const support = data.support || {};
+      if (supportEnabledEl) supportEnabledEl.checked = !!support.enabled;
+      if (support.title && document.getElementById('support_title')) {
+        document.getElementById('support_title').value = support.title;
+      }
+      if (support.message && document.getElementById('support_message')) {
+        document.getElementById('support_message').value = support.message;
+      }
+      renderSupportChannelsEditor(support.channels || []);
+      toggleSupportFields();
+
       const app = data.appearance || {};
       if (app.title) document.getElementById('chatbot_title').value = app.title;
       if (app.avatar_emoji) document.getElementById('chatbot_avatar_emoji').value = app.avatar_emoji;
@@ -655,6 +871,7 @@
         quick_actions: getQuickActions(),
         appearance: getAppearance(),
         float_button: getFloatButton(),
+        support: getSupportSettings(),
       };
       await api('/settings/chatbot', { method: 'POST', body: JSON.stringify(body) });
       alert('Settings saved.');
@@ -663,27 +880,159 @@
 
   // Conversation Logs.
   const logsContainer = document.getElementById('ssai-logs-container');
+  const logsToolbar = document.getElementById('ssai-logs-toolbar');
+  const logsSelectAll = document.getElementById('ssai-logs-select-all');
+  const logsCountEl = document.getElementById('ssai-logs-count');
+  const logsExportBtn = document.getElementById('ssai-logs-export');
+  const logsDeleteSelectedBtn = document.getElementById('ssai-logs-delete-selected');
+
   if (logsContainer) {
-    api('/logs?limit=30').then((data) => {
-      if (!data.logs || data.logs.length === 0) {
+    let allLogs = [];
+
+    function updateDeleteButton() {
+      if (!logsDeleteSelectedBtn) return;
+      const checked = logsContainer.querySelectorAll('.ssai-log-checkbox:checked');
+      logsDeleteSelectedBtn.disabled = checked.length === 0;
+    }
+
+    function renderLogs(logs, total) {
+      if (!logs || logs.length === 0) {
         logsContainer.innerHTML = '<p>No conversation logs yet.</p>';
+        if (logsToolbar) logsToolbar.style.display = 'none';
         return;
       }
 
-      logsContainer.innerHTML = '<p>Total: ' + data.total + ' conversations</p>';
-      data.logs.forEach((log) => {
+      if (logsToolbar) logsToolbar.style.display = 'flex';
+      if (logsCountEl) logsCountEl.textContent = 'Total: ' + total + ' conversations';
+
+      logsContainer.innerHTML = '';
+      logs.forEach((log) => {
         const div = document.createElement('div');
         div.className = 'ssai-log-item';
+        div.dataset.id = log.id;
         div.innerHTML =
-          '<div class="ssai-log-meta">' + log.created_at + ' | Session: ' + log.session_id + ' | ' + log.response_time_ms + 'ms</div>' +
-          '<div class="ssai-log-message"><span class="ssai-log-label">User:</span> ' + escapeHtml(log.user_message) + '</div>' +
-          '<div class="ssai-log-message"><span class="ssai-log-label">AI:</span> ' + escapeHtml(log.ai_response) + '</div>' +
-          (log.intent ? '<div class="ssai-log-message"><span class="ssai-log-label">Intent:</span> ' + log.intent + '</div>' : '') +
-          (log.search_query ? '<div class="ssai-log-message"><span class="ssai-log-label">Search:</span> ' + escapeHtml(log.search_query) + '</div>' : '') +
-          (log.error_message ? '<div class="ssai-log-message" style="color:red;"><span class="ssai-log-label">Error:</span> ' + escapeHtml(log.error_message) + '</div>' : '');
+          '<input type="checkbox" class="ssai-log-checkbox" value="' + log.id + '" />' +
+          '<div class="ssai-log-content">' +
+            '<div class="ssai-log-meta">' + escapeHtml(log.created_at) + ' | Session: ' + escapeHtml(log.session_id) + ' | ' + log.response_time_ms + 'ms</div>' +
+            '<div class="ssai-log-message"><span class="ssai-log-label">User:</span> ' + escapeHtml(log.user_message) + '</div>' +
+            '<div class="ssai-log-message"><span class="ssai-log-label">AI:</span> ' + escapeHtml(log.ai_response) + '</div>' +
+            (log.intent ? '<div class="ssai-log-message"><span class="ssai-log-label">Intent:</span> ' + escapeHtml(log.intent) + '</div>' : '') +
+            (log.search_query ? '<div class="ssai-log-message"><span class="ssai-log-label">Search:</span> ' + escapeHtml(log.search_query) + '</div>' : '') +
+            (log.error_message ? '<div class="ssai-log-message" style="color:red;"><span class="ssai-log-label">Error:</span> ' + escapeHtml(log.error_message) + '</div>' : '') +
+          '</div>' +
+          '<div class="ssai-log-actions">' +
+            '<button type="button" class="button ssai-delete-log" data-id="' + log.id + '">Delete</button>' +
+          '</div>';
         logsContainer.appendChild(div);
       });
+
+      logsContainer.querySelectorAll('.ssai-log-checkbox').forEach((cb) => {
+        cb.addEventListener('change', updateDeleteButton);
+      });
+
+      logsContainer.querySelectorAll('.ssai-delete-log').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this log entry?')) return;
+          const id = btn.dataset.id;
+          await api('/logs/' + id, { method: 'DELETE' });
+          btn.closest('.ssai-log-item').remove();
+          allLogs = allLogs.filter((l) => String(l.id) !== String(id));
+          if (logsCountEl) logsCountEl.textContent = 'Total: ' + (allLogs.length) + ' conversations (showing ' + logsContainer.querySelectorAll('.ssai-log-item').length + ')';
+          if (logsContainer.querySelectorAll('.ssai-log-item').length === 0) {
+            logsContainer.innerHTML = '<p>No conversation logs yet.</p>';
+            if (logsToolbar) logsToolbar.style.display = 'none';
+          }
+          updateDeleteButton();
+        });
+      });
+
+      if (logsSelectAll) logsSelectAll.checked = false;
+      updateDeleteButton();
+    }
+
+    function csvEscape(value) {
+      const str = String(value ?? '').replace(/"/g, '""');
+      return '"' + str + '"';
+    }
+
+    function downloadCsv(logs) {
+      const headers = ['ID', 'Session ID', 'Created At', 'User Message', 'AI Response', 'Intent', 'Search Query', 'Response Time (ms)', 'Error Message', 'Products Found', 'Extracted Data'];
+      const rows = logs.map((log) => [
+        log.id,
+        log.session_id,
+        log.created_at,
+        log.user_message,
+        log.ai_response,
+        log.intent,
+        log.search_query,
+        log.response_time_ms,
+        log.error_message,
+        log.products_found,
+        log.extracted_data,
+      ]);
+
+      const csv = '\uFEFF' + [headers, ...rows].map((row) => row.map(csvEscape).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'ssai-conversation-logs-' + new Date().toISOString().slice(0, 10) + '.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    api('/logs?limit=100').then((data) => {
+      allLogs = data.logs || [];
+      renderLogs(allLogs, data.total || allLogs.length);
     });
+
+    if (logsSelectAll) {
+      logsSelectAll.addEventListener('change', () => {
+        logsContainer.querySelectorAll('.ssai-log-checkbox').forEach((cb) => {
+          cb.checked = logsSelectAll.checked;
+        });
+        updateDeleteButton();
+      });
+    }
+
+    if (logsExportBtn) {
+      logsExportBtn.addEventListener('click', async () => {
+        logsExportBtn.disabled = true;
+        logsExportBtn.textContent = 'Exporting...';
+        try {
+          const data = await api('/logs?limit=10000');
+          downloadCsv(data.logs || []);
+        } finally {
+          logsExportBtn.disabled = false;
+          logsExportBtn.textContent = 'Export CSV';
+        }
+      });
+    }
+
+    if (logsDeleteSelectedBtn) {
+      logsDeleteSelectedBtn.addEventListener('click', async () => {
+        const checked = logsContainer.querySelectorAll('.ssai-log-checkbox:checked');
+        if (checked.length === 0) return;
+        if (!confirm('Delete ' + checked.length + ' selected log(s)?')) return;
+
+        const ids = Array.from(checked).map((cb) => parseInt(cb.value, 10));
+        await api('/logs', { method: 'DELETE', body: JSON.stringify({ ids }) });
+
+        ids.forEach((id) => {
+          const item = logsContainer.querySelector('.ssai-log-item[data-id="' + id + '"]');
+          if (item) item.remove();
+        });
+
+        allLogs = allLogs.filter((l) => !ids.includes(parseInt(l.id, 10)));
+        if (logsCountEl) logsCountEl.textContent = 'Total: ' + allLogs.length + ' conversations';
+        if (logsContainer.querySelectorAll('.ssai-log-item').length === 0) {
+          logsContainer.innerHTML = '<p>No conversation logs yet.</p>';
+          if (logsToolbar) logsToolbar.style.display = 'none';
+        }
+        if (logsSelectAll) logsSelectAll.checked = false;
+        updateDeleteButton();
+      });
+    }
   }
 
   // Diagnostics.

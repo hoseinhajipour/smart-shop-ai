@@ -137,8 +137,21 @@ class SettingsController {
 
 		// Conversation Logs.
 		register_rest_route( self::NAMESPACE, '/logs', array(
-			'methods'             => 'GET',
-			'callback'            => array( $this, 'get_logs' ),
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_logs' ),
+				'permission_callback' => array( $this, 'check_admin' ),
+			),
+			array(
+				'methods'             => 'DELETE',
+				'callback'            => array( $this, 'delete_logs_bulk' ),
+				'permission_callback' => array( $this, 'check_admin' ),
+			),
+		) );
+
+		register_rest_route( self::NAMESPACE, '/logs/(?P<id>\d+)', array(
+			'methods'             => 'DELETE',
+			'callback'            => array( $this, 'delete_log' ),
 			'permission_callback' => array( $this, 'check_admin' ),
 		) );
 
@@ -168,34 +181,72 @@ class SettingsController {
 
 	public function get_ai_settings( WP_REST_Request $request ): WP_REST_Response {
 		$settings = Settings::get_ai_settings();
-		// Mask API key.
+
 		if ( ! empty( $settings['api_key'] ) ) {
 			$settings['api_key_masked'] = substr( $settings['api_key'], 0, 4 ) . '...' . substr( $settings['api_key'], -4 );
 		}
+
+		unset( $settings['api_key'] );
 		$settings['presets']          = Settings::get_ai_provider_presets();
 		$settings['custom_endpoints'] = Settings::get_custom_endpoint_presets();
+
 		return new WP_REST_Response( $settings, 200 );
 	}
 
 	public function update_ai_settings( WP_REST_Request $request ): WP_REST_Response {
-		$params = $request->get_json_params() ?: $request->get_params();
-
-		$fields = array( 'ai_provider', 'ai_endpoint', 'ai_api_key', 'ai_model', 'ai_temperature', 'ai_max_tokens', 'ai_timeout' );
-		foreach ( $fields as $field ) {
-			$key = str_replace( 'ai_', '', $field );
-			if ( isset( $params[ $key ] ) || isset( $params[ $field ] ) ) {
-				$value = $params[ $key ] ?? $params[ $field ];
-				if ( 'ai_endpoint' === $field ) {
-					$value = esc_url_raw( $value );
-				}
-				if ( 'ai_provider' === $field ) {
-					$value = sanitize_text_field( $value );
-				}
-				Settings::set( $field, $value );
-			}
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = $request->get_params();
 		}
 
-		return new WP_REST_Response( array( 'success' => true ), 200 );
+		$field_map = array(
+			'provider'    => 'ai_provider',
+			'endpoint'    => 'ai_endpoint',
+			'api_key'     => 'ai_api_key',
+			'model'       => 'ai_model',
+			'temperature' => 'ai_temperature',
+			'max_tokens'  => 'ai_max_tokens',
+			'timeout'     => 'ai_timeout',
+		);
+
+		foreach ( $field_map as $param_key => $option_key ) {
+			if ( ! array_key_exists( $param_key, $params ) ) {
+				continue;
+			}
+
+			$value = $params[ $param_key ];
+
+			if ( 'api_key' === $param_key ) {
+				$value = sanitize_text_field( (string) $value );
+				if ( '' === $value ) {
+					continue;
+				}
+			} elseif ( 'endpoint' === $param_key ) {
+				$value = esc_url_raw( (string) $value );
+			} elseif ( in_array( $param_key, array( 'provider', 'model' ), true ) ) {
+				$value = sanitize_text_field( (string) $value );
+			} elseif ( 'temperature' === $param_key ) {
+				$value = (float) $value;
+			} elseif ( in_array( $param_key, array( 'max_tokens', 'timeout' ), true ) ) {
+				$value = (int) $value;
+			}
+
+			Settings::set( $option_key, $value );
+		}
+
+		$settings = Settings::get_ai_settings();
+		if ( ! empty( $settings['api_key'] ) ) {
+			$settings['api_key_masked'] = substr( $settings['api_key'], 0, 4 ) . '...' . substr( $settings['api_key'], -4 );
+		}
+		unset( $settings['api_key'] );
+
+		return new WP_REST_Response(
+			array(
+				'success'  => true,
+				'settings' => $settings,
+			),
+			200
+		);
 	}
 
 	public function get_mcp_settings( WP_REST_Request $request ): WP_REST_Response {
@@ -239,11 +290,18 @@ class SettingsController {
 	}
 
 	public function get_attributes( WP_REST_Request $request ): WP_REST_Response {
-		$discovery = new AttributeDiscovery();
+		$discovery   = new AttributeDiscovery();
+		$suggestions = $discovery->get_mapping_suggestions();
+		$brand_cat   = $discovery->suggest_brand_category();
+		if ( $brand_cat && empty( $suggestions['brand'] ) ) {
+			$suggestions['brand'] = $brand_cat;
+		}
+
 		return new WP_REST_Response( array(
-			'attributes'  => $discovery->get_all_attributes(),
-			'mapping'       => Settings::get_attribute_mapping(),
-			'suggestions' => $discovery->get_mapping_suggestions(),
+			'attributes'   => $discovery->get_all_attributes(),
+			'categories'   => $discovery->get_product_categories(),
+			'mapping'      => Settings::get_attribute_mapping(),
+			'suggestions'  => $suggestions,
 		), 200 );
 	}
 
@@ -325,6 +383,10 @@ class SettingsController {
 			}
 		}
 
+		if ( isset( $params['support'] ) ) {
+			Settings::set( 'chatbot_support', Settings::sanitize_support_settings( $params['support'] ) );
+		}
+
 		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 
@@ -362,6 +424,32 @@ class SettingsController {
 		return new WP_REST_Response( array(
 			'logs'  => ConversationLogger::get_logs( $limit, $offset ),
 			'total' => ConversationLogger::get_log_count(),
+		), 200 );
+	}
+
+	public function delete_log( WP_REST_Request $request ): WP_REST_Response {
+		$id = (int) $request->get_param( 'id' );
+
+		if ( ! ConversationLogger::delete_log( $id ) ) {
+			return new WP_REST_Response( array( 'success' => false, 'message' => 'Log not found.' ), 404 );
+		}
+
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	public function delete_logs_bulk( WP_REST_Request $request ): WP_REST_Response {
+		$params = $request->get_json_params() ?: $request->get_params();
+		$ids    = $params['ids'] ?? array();
+
+		if ( empty( $ids ) || ! is_array( $ids ) ) {
+			return new WP_REST_Response( array( 'success' => false, 'message' => 'No log IDs provided.' ), 400 );
+		}
+
+		$deleted = ConversationLogger::delete_logs( $ids );
+
+		return new WP_REST_Response( array(
+			'success' => true,
+			'deleted' => $deleted,
 		), 200 );
 	}
 

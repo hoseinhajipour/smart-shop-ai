@@ -47,16 +47,19 @@ class SearchRouter {
 	}
 
 	private function determine_search_type( array $intent ): string {
-		if ( $intent['intent'] === 'product_search' && ! empty( $intent['search_text'] ) ) {
-			return 'product_search';
-		}
+		$attrs = $intent['attributes'] ?? array();
 
-		if ( ! empty( $intent['vehicle'] ) || ! empty( $intent['attributes'] ) ) {
+		// Vehicle fitment specs → attribute-based search (PCD, ET, size filters).
+		if ( ! empty( $attrs['pcd'] ) || ! empty( $intent['vehicle'] ) ) {
 			return 'attribute_search';
 		}
 
 		if ( ! empty( $intent['search_text'] ) ) {
 			return 'product_search';
+		}
+
+		if ( ! empty( $attrs ) ) {
+			return 'attribute_search';
 		}
 
 		return 'smart_search';

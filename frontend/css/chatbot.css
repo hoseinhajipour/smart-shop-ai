@@ -538,6 +538,121 @@
 
 .ssai-product-btn-cart:hover { background: var(--ssai-secondary); }
 
+/* ── Support Contact Card ── */
+.ssai-support-card {
+  margin: 8px 16px 12px;
+  padding: 16px;
+  border-radius: calc(var(--ssai-radius) + 4px);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(124, 58, 237, 0.06) 100%);
+  border: 1px solid rgba(79, 70, 229, 0.15);
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
+}
+
+.ssai-support-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.ssai-support-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ssai-support-header-text strong {
+  display: block;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.ssai-support-header-text p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.ssai-support-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ssai-support-channel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: ssai-msg-enter 0.4s ease backwards;
+}
+
+.ssai-support-channel:hover {
+  transform: translateY(-2px);
+  border-color: var(--ssai-primary);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.15);
+}
+
+.ssai-support-channel-icon {
+  font-size: 22px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ssai-primary), var(--ssai-secondary));
+  flex-shrink: 0;
+}
+
+.ssai-support-whatsapp .ssai-support-channel-icon { background: linear-gradient(135deg, #25d366, #128c7e); }
+.ssai-support-instagram .ssai-support-channel-icon { background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af); }
+.ssai-support-telegram .ssai-support-channel-icon { background: linear-gradient(135deg, #2aabee, #229ed9); }
+.ssai-support-phone .ssai-support-channel-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.ssai-support-email .ssai-support-channel-icon { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+
+.ssai-support-channel-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ssai-support-channel-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ssai-support-channel-value {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ssai-support-channel-arrow {
+  font-size: 16px;
+  color: var(--ssai-primary);
+  opacity: 0.6;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.ssai-support-channel:hover .ssai-support-channel-arrow {
+  transform: translateX(3px);
+  opacity: 1;
+}
+
 /* ── Mobile Responsive ── */
 @media (max-width: 480px) {
   .ssai-chatbot-root {

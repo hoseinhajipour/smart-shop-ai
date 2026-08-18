@@ -6,6 +6,7 @@ use SmartShopAI\AI\IntentParser;
 use SmartShopAI\Search\SearchRouter;
 use SmartShopAI\Core\ConversationLogger;
 use SmartShopAI\Core\Settings;
+use SmartShopAI\Support\SupportHelper;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -67,8 +68,9 @@ class ChatController {
 
 		// Step 1: Extract intent.
 		$extract_result = $ai_service->extract_intent( $message, $history );
+		$extract_failed = ! $extract_result['success'];
 
-		if ( ! $extract_result['success'] ) {
+		if ( $extract_failed ) {
 			// Fallback to keyword-based parsing.
 			$raw_intent = array(
 				'intent'           => 'smart_search',
@@ -81,9 +83,16 @@ class ChatController {
 
 		$intent = $intent_parser->parse( $raw_intent );
 
+		// Apply vehicle fitment from site selector (bolt pattern, offset, rim size).
+		if ( ! empty( $context['fitment'] ) && is_array( $context['fitment'] ) ) {
+			$intent = $intent_parser->apply_fitment( $intent, $context['fitment'] );
+		}
+
 		// Merge with conversation context.
 		if ( ! empty( $context['intent'] ) ) {
 			$intent = $intent_parser->merge_context( $intent, $context['intent'] );
+		} else {
+			$intent = $intent_parser->finalize_intent( $intent );
 		}
 
 		$response_data = array(
@@ -100,7 +109,10 @@ class ChatController {
 			$response_data['needs_followup']     = true;
 			$response_data['followup_question']  = $intent['followup_question'];
 			$response_data['message']            = $intent['followup_question'];
-			$response_data['context']            = array( 'intent' => $intent );
+			$response_data['context']            = array(
+				'intent'   => $intent,
+				'fitment' => $context['fitment'] ?? ( $intent['fitment'] ?? null ),
+			);
 
 			$this->log_conversation( $session_id, $message, $response_data['message'], $intent, '', array(), array(), $start_time );
 			return new WP_REST_Response( $response_data, 200 );
@@ -122,10 +134,20 @@ class ChatController {
 				? $ai_response['content']
 				: $this->fallback_response( $products, $intent );
 		} else {
-			$response_data['message'] = 'Sorry, no products matched your request. Please share more details, such as vehicle model and size.';
+			$no_results_message = 'Sorry, no products matched your request. Please share more details, such as vehicle model and size.';
+			$response_data['message'] = $no_results_message;
+			$this->maybe_attach_support( $response_data, true );
 		}
 
-		$response_data['context'] = array( 'intent' => $intent );
+		// Low-confidence intent without products.
+		if ( empty( $products ) && ! $extract_failed && (float) ( $intent['confidence'] ?? 1 ) < 0.35 ) {
+			$this->maybe_attach_support( $response_data, true );
+		}
+
+		$response_data['context'] = array(
+			'intent'   => $intent,
+			'fitment' => $context['fitment'] ?? ( $intent['fitment'] ?? null ),
+		);
 
 		$this->log_conversation(
 			$session_id,
@@ -143,14 +165,48 @@ class ChatController {
 
 	public function get_chat_config( WP_REST_Request $request ): WP_REST_Response {
 		$settings = Settings::get_chatbot_settings();
+		$support  = $settings['support'];
 
 		return new WP_REST_Response( array(
 			'enabled'       => $settings['enabled'],
 			'welcome'       => $settings['welcome'],
 			'quick_actions' => $settings['quick_actions'],
+			'support'       => array(
+				'enabled' => $support['enabled'],
+			),
 			'rest_url'      => rest_url( self::NAMESPACE ),
 			'nonce'         => wp_create_nonce( 'wp_rest' ),
 		), 200 );
+	}
+
+	/**
+	 * Attach support contact info when AI cannot provide a precise answer.
+	 */
+	private function maybe_attach_support( array &$response_data, bool $should_show ): void {
+		if ( ! $should_show ) {
+			return;
+		}
+
+		$support = Settings::get_support_settings();
+		if ( empty( $support['enabled'] ) || empty( $support['channels'] ) ) {
+			return;
+		}
+
+		$channels = SupportHelper::format_channels_for_display( $support['channels'] );
+		if ( empty( $channels ) ) {
+			return;
+		}
+
+		$response_data['show_support'] = true;
+		$response_data['support']      = array(
+			'title'    => $support['title'],
+			'message'  => $support['message'],
+			'channels' => $channels,
+		);
+
+		if ( ! empty( $support['message'] ) ) {
+			$response_data['message'] = $support['message'];
+		}
 	}
 
 	private function fallback_response( array $products, array $intent ): string {

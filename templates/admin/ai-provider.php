@@ -53,7 +53,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</tr>
 			<tr>
 				<th><label for="api_key"><?php esc_html_e( 'API Key', 'smart-shop-ai' ); ?></label></th>
-				<td><input type="password" id="api_key" name="api_key" class="regular-text" autocomplete="off" /></td>
+				<td>
+					<div class="ssai-secret-field">
+						<input type="password" id="api_key" name="api_key" class="regular-text" autocomplete="off" />
+						<button type="button" id="ssai-toggle-api-key" class="button ssai-toggle-secret" aria-pressed="false" aria-label="<?php esc_attr_e( 'Show API key', 'smart-shop-ai' ); ?>">
+							<?php esc_html_e( 'Show', 'smart-shop-ai' ); ?>
+						</button>
+					</div>
+				</td>
 			</tr>
 			<tr>
 				<th><label for="model"><?php esc_html_e( 'Model', 'smart-shop-ai' ); ?></label></th>

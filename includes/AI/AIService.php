@@ -84,7 +84,11 @@ Return ONLY valid JSON with these fields (use null for missing values):
   "vehicle_brand": "brand or null",
   "vehicle_model": "model or null",
   "attributes": {
-    "size": "wheel/tire size or null",
+    "size": "wheel/tire diameter (e.g. 17, 18, 20) or null",
+    "width": "rim width in inches (e.g. 8, 8.5) or null",
+    "diameter": "rim diameter in inches or null",
+    "pcd": "bolt pattern / PCD (e.g. 4x100, 6x139.7) or null",
+    "et": "offset / ET in mm (e.g. 35, 45) or null",
     "color": "color or null",
     "brand": "product brand or null",
     "style": "style or null",
@@ -108,6 +112,20 @@ Product type detection:
 - لاستیک, tire → tire
 - باتری, battery → battery
 - قطعات, parts → parts
+
+IMPORTANT — Wheel/rim brands vs vehicles:
+- ARCHER, KMC, Rays, BBS, Enkei are WHEEL BRANDS, not car brands.
+- "KMC T9", "kmc t9" is a wheel model/style — put brand="KMC", style="T9", vehicle=null.
+- Never put wheel brand names in the "vehicle" field.
+- When user asks about a wheel brand (e.g. ARCHER), set attributes.brand and build search_text like "ARCHER 17" or "ARCHER KMC T9".
+- For wheels, vehicle (car model) is optional when brand + size or brand + style are known.
+
+Wheel/tire fitment (CRITICAL for vehicle-based search):
+- Bolt Pattern / PCD (e.g. "6X139.7", "4x100") → attributes.pcd
+- Offset / ET (e.g. "35mm", "ET45") → attributes.et
+- Rim size "20x8" → diameter=20, width=8, size=20
+- When user selects a vehicle, extract compatible PCD if mentioned. Nissan Patrol often uses 6x139.7.
+- PCD is the most important filter when matching wheels/tires to a vehicle.
 
 {$attributes_info}
 PROMPT;

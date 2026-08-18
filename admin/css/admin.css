@@ -94,6 +94,21 @@
   flex: 1 1 220px;
 }
 
+.ssai-secret-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.ssai-secret-field .regular-text {
+  flex: 1 1 auto;
+}
+
+.ssai-toggle-secret {
+  flex: 0 0 auto;
+}
+
 .ssai-model-fetch-success {
   color: #00a32a;
 }
@@ -160,6 +175,53 @@
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ssai-log-checkbox {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.ssai-log-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ssai-log-actions {
+  flex-shrink: 0;
+}
+
+.ssai-logs-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.ssai-logs-toolbar-left,
+.ssai-logs-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ssai-logs-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ssai-logs-count {
+  color: #646970;
+  font-size: 13px;
 }
 
 .ssai-log-meta {
@@ -290,6 +352,44 @@
 .ssai-quick-actions-toolbar {
   display: flex;
   gap: 8px;
+  margin-top: 12px;
+}
+
+.ssai-support-channels-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ssai-support-channel-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 1.2fr 36px;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.ssai-support-channel-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #50575e;
+}
+
+.ssai-remove-support-channel {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  line-height: 1;
+  font-size: 20px;
+}
+
+.ssai-support-toolbar {
   margin-top: 12px;
 }
 

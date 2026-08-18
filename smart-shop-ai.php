@@ -3,10 +3,10 @@
  * Plugin Name:       Smart Shop AI Assistant
  * Plugin URI:        https://example.com/smart-shop-ai
  * Description:       AI-powered shopping assistant for WooCommerce. Helps customers find products through natural language chat.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Requires at least: 6.0
  * Requires PHP:      7.4
- * Author:            Smart Shop AI
+ * Author:            hosein hajipour
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       smart-shop-ai

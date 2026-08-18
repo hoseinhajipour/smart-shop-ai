@@ -44,6 +44,9 @@ class ChatbotLoader {
 			'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
 			'appearance'   => $appearance,
 			'floatButton'  => $float_button,
+			'support'      => array(
+				'enabled' => ! empty( $settings['support']['enabled'] ),
+			),
 		) );
 
 		// Inject CSS custom properties for theming.

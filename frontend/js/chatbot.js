@@ -13,6 +13,9 @@
   let sessionId = '';
   let conversationHistory = [];
   let conversationContext = {};
+  if (config.vehicleFitment && typeof config.vehicleFitment === 'object') {
+    conversationContext.fitment = config.vehicleFitment;
+  }
   let isTyping = false;
   let avatarState = 'idle'; // idle | thinking | typing | speaking
 
@@ -190,6 +193,10 @@
         renderProducts(response.products);
       }
 
+      if (response.show_support && response.support) {
+        renderSupportCard(response.support);
+      }
+
       setAvatarState('idle');
       setStatus('Online');
     } catch (err) {
@@ -344,6 +351,59 @@
     scrollToBottom();
   }
 
+  function renderSupportCard(support) {
+    if (!support || !support.channels || support.channels.length === 0) return;
+
+    const card = document.createElement('div');
+    card.className = 'ssai-support-card ssai-message-enter';
+
+    const header = document.createElement('div');
+    header.className = 'ssai-support-header';
+    header.innerHTML =
+      '<span class="ssai-support-icon">🤝</span>' +
+      '<div class="ssai-support-header-text">' +
+        '<strong>' + escapeHtml(support.title || 'Contact Support') + '</strong>' +
+        (support.message ? '<p>' + escapeHtml(support.message) + '</p>' : '') +
+      '</div>';
+    card.appendChild(header);
+
+    const channels = document.createElement('div');
+    channels.className = 'ssai-support-channels';
+
+    support.channels.forEach((channel, i) => {
+      const link = document.createElement('a');
+      link.className = 'ssai-support-channel ssai-support-' + (channel.type || 'custom');
+      link.href = channel.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.style.animationDelay = (i * 0.08) + 's';
+
+      const displayValue = channel.type === 'instagram' || channel.type === 'telegram'
+        ? (channel.value.startsWith('@') ? channel.value : '@' + channel.value.replace(/^@/, ''))
+        : channel.value;
+
+      link.innerHTML =
+        '<span class="ssai-support-channel-icon">' + (channel.icon || '🔗') + '</span>' +
+        '<span class="ssai-support-channel-body">' +
+          '<span class="ssai-support-channel-label">' + escapeHtml(channel.label || channel.type) + '</span>' +
+          '<span class="ssai-support-channel-value">' + escapeHtml(displayValue) + '</span>' +
+        '</span>' +
+        '<span class="ssai-support-channel-arrow">→</span>';
+
+      channels.appendChild(link);
+    });
+
+    card.appendChild(channels);
+    messagesEl.appendChild(card);
+    scrollToBottom();
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
   async function addToCart(productId) {
     try {
       const formData = new FormData();
@@ -385,4 +445,16 @@
 
     return response.json();
   }
+
+  // Allow external vehicle selector to pass fitment data (bolt pattern, offset, rim size).
+  window.ssaiSetVehicleFitment = function (fitment) {
+    if (!fitment || typeof fitment !== 'object') return;
+    conversationContext.fitment = fitment;
+  };
+
+  document.addEventListener('ssai:vehicle-selected', function (event) {
+    if (event.detail) {
+      window.ssaiSetVehicleFitment(event.detail);
+    }
+  });
 })();

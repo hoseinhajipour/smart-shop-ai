@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap ssai-admin-wrap">
 	<h1><?php esc_html_e( 'Product Attribute Mapping', 'smart-shop-ai' ); ?></h1>
-	<p><?php esc_html_e( 'Map semantic attribute names to your WooCommerce global attributes.', 'smart-shop-ai' ); ?></p>
+	<p><?php esc_html_e( 'Map semantic attribute names to your WooCommerce global attributes or product categories.', 'smart-shop-ai' ); ?></p>
 
 	<div id="ssai-attributes-loading"><?php esc_html_e( 'Loading attributes...', 'smart-shop-ai' ); ?></div>
 
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Semantic Name', 'smart-shop-ai' ); ?></th>
-					<th><?php esc_html_e( 'WooCommerce Attribute', 'smart-shop-ai' ); ?></th>
+					<th><?php esc_html_e( 'WooCommerce Attribute / Category', 'smart-shop-ai' ); ?></th>
 				</tr>
 			</thead>
 			<tbody id="ssai-mapping-body"></tbody>

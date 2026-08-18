@@ -1,6 +1,8 @@
 <?php
 namespace SmartShopAI\AI;
 
+use SmartShopAI\Fitment\FitmentHelper;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -49,6 +51,14 @@ class IntentParser {
 		'tire'    => array( 'لاستیک', 'tire', 'tyre' ),
 		'battery' => array( 'باتری', 'battery' ),
 		'parts'   => array( 'قطعه', 'قطعات', 'part', 'parts', 'لوازم' ),
+	);
+
+	/**
+	 * Known wheel/rim brand names (not vehicles).
+	 */
+	private const WHEEL_BRANDS = array(
+		'archer', 'kmc', 'rays', 'bbs', 'enkei', 'oz racing', 'oz', 'work',
+		'vossen', 'rotiform', 'fuel', 'american racing', 'method', 'black rhino',
 	);
 
 	public function parse( array $raw_intent ): array {
@@ -132,6 +142,10 @@ class IntentParser {
 
 		$map = array(
 			'size'      => 'size',
+			'width'     => 'width',
+			'diameter'  => 'diameter',
+			'pcd'       => 'pcd',
+			'et'        => 'et',
 			'color'     => 'color',
 			'brand'     => 'brand',
 			'style'     => 'style',
@@ -162,6 +176,34 @@ class IntentParser {
 			}
 		}
 
+		if ( ! empty( $normalized['pcd'] ) ) {
+			$normalized['pcd'] = FitmentHelper::normalize_pcd( (string) $normalized['pcd'] );
+		}
+
+		if ( ! empty( $normalized['et'] ) ) {
+			$normalized['et'] = FitmentHelper::normalize_et( (string) $normalized['et'] );
+		}
+
+		if ( ! empty( $normalized['width'] ) ) {
+			$normalized['width'] = FitmentHelper::normalize_width( (string) $normalized['width'] );
+		}
+
+		if ( ! empty( $normalized['diameter'] ) ) {
+			$normalized['diameter'] = FitmentHelper::normalize_diameter( (string) $normalized['diameter'] );
+		}
+
+		// Parse combined rim size into diameter + width.
+		if ( ! empty( $normalized['size'] ) && mb_strpos( (string) $normalized['size'], 'x' ) !== false ) {
+			$parsed = FitmentHelper::parse_rim_size( (string) $normalized['size'] );
+			if ( ! empty( $parsed['diameter'] ) ) {
+				$normalized['size']     = $parsed['diameter'];
+				$normalized['diameter'] = $parsed['diameter'];
+			}
+			if ( ! empty( $parsed['width'] ) ) {
+				$normalized['width'] = $parsed['width'];
+			}
+		}
+
 		return $normalized;
 	}
 
@@ -185,15 +227,243 @@ class IntentParser {
 			}
 		}
 
-		// Re-evaluate followup need.
-		if ( $merged['product_type'] === 'wheel' && empty( $merged['attributes']['size'] ) && empty( $merged['vehicle'] ) ) {
-			$merged['needs_followup'] = true;
-			$merged['followup_question'] = $merged['followup_question'] ?: 'Which vehicle and wheel size are you looking for?';
-		} elseif ( $merged['product_type'] === 'wheel' && ! empty( $merged['vehicle'] ) && empty( $merged['attributes']['size'] ) ) {
-			$merged['needs_followup'] = true;
-			$merged['followup_question'] = $merged['followup_question'] ?: 'What wheel size do you need? (e.g. 15, 16, 17)';
+		return $this->finalize_intent( $merged );
+	}
+
+	/**
+	 * Apply vehicle fitment data from the site vehicle selector.
+	 */
+	public function apply_fitment( array $intent, array $fitment ): array {
+		if ( empty( $fitment ) ) {
+			return $intent;
 		}
 
-		return $merged;
+		$fitment_attrs = FitmentHelper::resolve_attributes( $fitment );
+
+		if ( ! empty( $fitment_attrs ) ) {
+			$intent['attributes'] = array_merge( $fitment_attrs, $intent['attributes'] ?? array() );
+		}
+
+		if ( empty( $intent['vehicle'] ) ) {
+			$vehicle_label = FitmentHelper::build_vehicle_label( $fitment );
+			if ( $vehicle_label ) {
+				$intent['vehicle'] = $vehicle_label;
+			}
+		}
+
+		if ( empty( $intent['vehicle_brand'] ) && ! empty( $fitment['make'] ) ) {
+			$intent['vehicle_brand'] = $fitment['make'];
+		}
+
+		if ( empty( $intent['vehicle_model'] ) && ! empty( $fitment['model'] ) ) {
+			$intent['vehicle_model'] = $fitment['model'];
+		}
+
+		if ( empty( $intent['product_type'] ) && ! empty( $fitment['product_type'] ) ) {
+			$intent['product_type'] = $this->normalize_product_type( $fitment['product_type'] );
+		}
+
+		$intent['fitment'] = $fitment;
+
+		return $this->finalize_intent( $intent );
+	}
+
+	/**
+	 * Post-process intent: fix misidentifications, build search text, adjust followup.
+	 */
+	public function finalize_intent( array $intent ): array {
+		if ( empty( $intent['product_type'] ) ) {
+			$detected = $this->detect_wheel_product_type( $intent );
+			if ( $detected ) {
+				$intent['product_type'] = $detected;
+			}
+		}
+
+		$intent = $this->correct_wheel_vehicle_confusion( $intent );
+
+		if ( empty( $intent['search_text'] ) ) {
+			$built = $this->build_search_text( $intent );
+			if ( $built ) {
+				$intent['search_text'] = $built;
+			}
+		}
+
+		$intent = $this->adjust_wheel_followup( $intent );
+
+		return $intent;
+	}
+
+	/**
+	 * Build a text search query from structured intent fields.
+	 */
+	public function build_search_text( array $intent ): ?string {
+		if ( ! empty( $intent['search_text'] ) ) {
+			return $intent['search_text'];
+		}
+
+		$parts  = array();
+		$attrs  = $intent['attributes'] ?? array();
+
+		if ( ! empty( $attrs['brand'] ) ) {
+			$parts[] = $attrs['brand'];
+		}
+		if ( ! empty( $attrs['style'] ) ) {
+			$parts[] = $attrs['style'];
+		}
+		if ( ! empty( $attrs['size'] ) ) {
+			$parts[] = $attrs['size'];
+		}
+		if ( ! empty( $attrs['pcd'] ) ) {
+			$parts[] = $attrs['pcd'];
+		}
+		if ( ! empty( $attrs['et'] ) ) {
+			$parts[] = 'ET' . $attrs['et'];
+		}
+		if ( ! empty( $attrs['width'] ) && ! empty( $attrs['diameter'] ) ) {
+			$parts[] = $attrs['diameter'] . 'x' . $attrs['width'];
+		}
+		if ( ! empty( $intent['vehicle'] ) ) {
+			$parts[] = $intent['vehicle'];
+		}
+
+		if ( empty( $parts ) && ! empty( $intent['product_type'] ) ) {
+			$type_labels = array(
+				'wheel'   => 'wheel',
+				'tire'    => 'tire',
+				'battery' => 'battery',
+				'parts'   => 'parts',
+			);
+			$type = $intent['product_type'];
+			if ( isset( $type_labels[ $type ] ) ) {
+				$parts[] = $type_labels[ $type ];
+			}
+		}
+
+		return ! empty( $parts ) ? implode( ' ', $parts ) : null;
+	}
+
+	/**
+	 * Prevent wheel brand/model names from being treated as vehicle names.
+	 */
+	private function correct_wheel_vehicle_confusion( array $intent ): array {
+		if ( ( $intent['product_type'] ?? '' ) !== 'wheel' ) {
+			return $intent;
+		}
+
+		$attrs = $intent['attributes'] ?? array();
+
+		// Parse wheel model strings from the current message context.
+		if ( ! empty( $intent['vehicle'] ) ) {
+			$vehicle_key = mb_strtolower( trim( $intent['vehicle'] ) );
+
+			if ( ! isset( self::VEHICLE_ALIASES[ $vehicle_key ] ) && ! $this->is_known_vehicle( $intent['vehicle'] ) ) {
+				$parsed = $this->parse_wheel_model_string( $intent['vehicle'] );
+
+				if ( ! empty( $parsed['brand'] ) && empty( $attrs['brand'] ) ) {
+					$attrs['brand'] = $parsed['brand'];
+				}
+				if ( ! empty( $parsed['style'] ) && empty( $attrs['style'] ) ) {
+					$attrs['style'] = $parsed['style'];
+				}
+
+				$intent['vehicle']        = null;
+				$intent['vehicle_brand']  = null;
+				$intent['vehicle_model']  = null;
+			}
+		}
+
+		$intent['attributes'] = $attrs;
+		return $intent;
+	}
+
+	private function is_known_vehicle( string $vehicle ): bool {
+		$lower = mb_strtolower( trim( $vehicle ) );
+		foreach ( self::VEHICLE_ALIASES as $alias => $normalized ) {
+			if ( $lower === mb_strtolower( $alias ) || $lower === mb_strtolower( $normalized ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Parse strings like "KMC T9" into brand + style.
+	 */
+	private function parse_wheel_model_string( string $text ): array {
+		$text = trim( $text );
+
+		if ( preg_match( '/^(kmc)\s*t[-\s]?(\w+)$/iu', $text, $matches ) ) {
+			return array(
+				'brand' => strtoupper( $matches[1] ),
+				'style' => 'T' . strtoupper( $matches[2] ),
+			);
+		}
+
+		$lower = mb_strtolower( $text );
+		foreach ( self::WHEEL_BRANDS as $brand ) {
+			if ( mb_strpos( $lower, $brand ) !== false ) {
+				$style = trim( preg_replace( '/\b' . preg_quote( $brand, '/' ) . '\b/iu', '', $text ) );
+				return array(
+					'brand' => strtoupper( $brand ),
+					'style' => $style ?: null,
+				);
+			}
+		}
+
+		return array( 'style' => $text );
+	}
+
+	private function detect_wheel_product_type( array $intent ): ?string {
+		$text = trim(
+			( $intent['search_text'] ?? '' ) . ' ' .
+			( $intent['vehicle'] ?? '' ) . ' ' .
+			( $intent['attributes']['brand'] ?? '' ) . ' ' .
+			( $intent['attributes']['style'] ?? '' )
+		);
+
+		if ( '' === $text ) {
+			return null;
+		}
+
+		$lower = mb_strtolower( $text );
+		foreach ( self::WHEEL_BRANDS as $brand ) {
+			if ( mb_strpos( $lower, $brand ) !== false ) {
+				return 'wheel';
+			}
+		}
+
+		if ( preg_match( '/\bkmc\s*t[-\s]?\w+/i', $text ) ) {
+			return 'wheel';
+		}
+
+		return null;
+	}
+
+	private function adjust_wheel_followup( array $intent ): array {
+		if ( ( $intent['product_type'] ?? '' ) !== 'wheel' ) {
+			return $intent;
+		}
+
+		$attrs     = $intent['attributes'] ?? array();
+		$has_brand = ! empty( $attrs['brand'] );
+		$has_style = ! empty( $attrs['style'] );
+		$has_size  = ! empty( $attrs['size'] );
+		$has_text  = ! empty( $intent['search_text'] );
+
+		// Enough info to search without asking for vehicle.
+		if ( $has_text || ( $has_brand && ( $has_size || $has_style ) ) || ( $has_size && $has_style ) || ! empty( $attrs['pcd'] ) ) {
+			$intent['needs_followup'] = false;
+			return $intent;
+		}
+
+		if ( empty( $attrs['size'] ) && empty( $intent['vehicle'] ) ) {
+			$intent['needs_followup']     = true;
+			$intent['followup_question']  = $intent['followup_question'] ?: 'Which vehicle and wheel size are you looking for?';
+		} elseif ( ! empty( $intent['vehicle'] ) && empty( $attrs['size'] ) ) {
+			$intent['needs_followup']     = true;
+			$intent['followup_question']  = $intent['followup_question'] ?: 'What wheel size do you need? (e.g. 15, 16, 17)';
+		}
+
+		return $intent;
 	}
 }

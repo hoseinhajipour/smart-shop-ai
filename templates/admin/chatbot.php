@@ -57,6 +57,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<button type="button" id="ssai-reset-quick-actions" class="button"><?php esc_html_e( 'Reset to Defaults', 'smart-shop-ai' ); ?></button>
 				</p>
 
+				<h2><?php esc_html_e( 'Support Contact', 'smart-shop-ai' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'When the AI cannot find an exact answer, show a support contact card with your preferred channels.', 'smart-shop-ai' ); ?></p>
+				<table class="form-table">
+					<tr>
+						<th><?php esc_html_e( 'Enable Support', 'smart-shop-ai' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" id="support_enabled" value="1" />
+								<?php esc_html_e( 'Show support options when AI cannot answer precisely', 'smart-shop-ai' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr class="ssai-support-field">
+						<th><label for="support_title"><?php esc_html_e( 'Card Title', 'smart-shop-ai' ); ?></label></th>
+						<td><input type="text" id="support_title" class="regular-text" value="Contact Support" /></td>
+					</tr>
+					<tr class="ssai-support-field">
+						<th><label for="support_message"><?php esc_html_e( 'Fallback Message', 'smart-shop-ai' ); ?></label></th>
+						<td>
+							<textarea id="support_message" rows="3" class="large-text"><?php echo esc_textarea( 'I don\'t have an exact answer for this question. Please contact our support team — we\'ll be happy to help.' ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Shown when the assistant cannot find a precise product match.', 'smart-shop-ai' ); ?></p>
+						</td>
+					</tr>
+				</table>
+				<div id="ssai-support-channels-editor" class="ssai-support-channels-editor"></div>
+				<p class="ssai-support-toolbar ssai-support-field">
+					<button type="button" id="ssai-add-support-channel" class="button"><?php esc_html_e( 'Add Support Channel', 'smart-shop-ai' ); ?></button>
+				</p>
+
 				<h2><?php esc_html_e( 'Appearance & Colors', 'smart-shop-ai' ); ?></h2>
 				<table class="form-table">
 					<tr>

@@ -76,6 +76,95 @@ class Settings {
 			'quick_actions' => self::get_quick_actions(),
 			'appearance'    => self::get_chatbot_appearance(),
 			'float_button'  => self::get_float_button_settings(),
+			'support'       => self::get_support_settings(),
+		);
+	}
+
+	public static function get_default_support_message(): string {
+		return 'I don\'t have an exact answer for this question. Please contact our support team — we\'ll be happy to help.';
+	}
+
+	public static function get_default_support_settings(): array {
+		return array(
+			'enabled'  => false,
+			'title'    => 'Contact Support',
+			'message'  => self::get_default_support_message(),
+			'channels' => array(),
+		);
+	}
+
+	public static function get_support_settings(): array {
+		$stored = self::get( 'chatbot_support', array() );
+		if ( ! is_array( $stored ) ) {
+			$stored = array();
+		}
+
+		return array(
+			'enabled'  => ! empty( $stored['enabled'] ),
+			'title'    => ! empty( $stored['title'] ) ? (string) $stored['title'] : 'Contact Support',
+			'message'  => ! empty( $stored['message'] ) ? (string) $stored['message'] : self::get_default_support_message(),
+			'channels' => self::sanitize_support_channels( $stored['channels'] ?? array() ),
+		);
+	}
+
+	/**
+	 * @param mixed $channels
+	 * @return array<int, array{type:string,label:string,value:string,url?:string}>
+	 */
+	public static function sanitize_support_channels( $channels ): array {
+		if ( ! is_array( $channels ) ) {
+			return array();
+		}
+
+		$allowed_types = array_keys( \SmartShopAI\Support\SupportHelper::CHANNEL_TYPES );
+		$sanitized     = array();
+
+		foreach ( $channels as $channel ) {
+			if ( ! is_array( $channel ) ) {
+				continue;
+			}
+
+			$type = sanitize_key( $channel['type'] ?? '' );
+			if ( ! in_array( $type, $allowed_types, true ) ) {
+				continue;
+			}
+
+			$value = sanitize_text_field( $channel['value'] ?? '' );
+			$label = sanitize_text_field( $channel['label'] ?? '' );
+
+			if ( '' === $value ) {
+				continue;
+			}
+
+			$item = array(
+				'type'  => $type,
+				'label' => $label,
+				'value' => $value,
+			);
+
+			if ( 'custom' === $type && ! empty( $channel['url'] ) ) {
+				$item['url'] = esc_url_raw( $channel['url'] );
+			}
+
+			$sanitized[] = $item;
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * @param mixed $support
+	 */
+	public static function sanitize_support_settings( $support ): array {
+		if ( ! is_array( $support ) ) {
+			return self::get_default_support_settings();
+		}
+
+		return array(
+			'enabled'  => ! empty( $support['enabled'] ),
+			'title'    => sanitize_text_field( $support['title'] ?? 'Contact Support' ),
+			'message'  => sanitize_textarea_field( $support['message'] ?? self::get_default_support_message() ),
+			'channels' => self::sanitize_support_channels( $support['channels'] ?? array() ),
 		);
 	}
 
