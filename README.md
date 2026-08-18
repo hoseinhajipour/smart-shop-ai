@@ -1,105 +1,215 @@
 # Smart Shop AI Assistant
 
-AI-powered shopping assistant plugin for WordPress and WooCommerce. Helps customers find products through natural language chat.
+**دستیار خرید هوشمند** — افزونه وردپرس و ووکامرس برای کمک به مشتریان در پیدا کردن محصولات از طریق گفت‌وگوی طبیعی (چت‌بات).
 
-## Features (MVP)
+این افزونه یک ویجت چت شناور روی فروشگاه شما نمایش می‌دهد. مشتری می‌تواند به زبان فارسی (و سایر زبان‌ها) درخواست خود را بیان کند — مثلاً «برای پژو ۲۰۶ رینگ ۱۶ می‌خوام» — و دستیار با کمک هوش مصنوعی، قصد کاربر را تشخیص می‌دهد، محصولات مرتبط را از ووکامرس جستجو می‌کند و نتایج را رتبه‌بندی و نمایش می‌دهد.
 
-- **AI Chatbot** — Floating chat widget with natural language product search
-- **Smart Search** — Converts user queries to structured attributes (vehicle, size, color, etc.)
-- **Normal Search** — Standard WooCommerce text search fallback
-- **Product Ranking** — Match score based on vehicle, size, color, brand, stock
-- **Provider Agnostic AI** — OpenAI, Anthropic, Gemini, OpenAI-Compatible APIs
-- **MCP Ready** — WooCommerce Direct (built-in) or external WooCommerce MCP
-- **Dynamic Attributes** — Auto-discovers WooCommerce global attributes with mapping UI
-- **AI Rules** — Configurable rules with priority and active/inactive toggle
-- **System Prompt** — Editable global system prompt
-- **Capabilities** — Toggle what AI can do (search, stock check, add to cart, etc.)
-- **Conversation Logs** — Debug logs with intent, search query, products found
-- **Diagnostics** — System health checks and test query runner
-- **Conversation Context** — Multi-turn conversation support
+---
 
-## Requirements
+## این پروژه چه کارهایی انجام می‌دهد؟
 
-- WordPress 6.0+
-- PHP 7.4+
-- WooCommerce 7.0+
+1. **گفت‌وگوی چندمرحله‌ای** — مشتری می‌تواند در چند پیام پشت‌سرهم نیاز خود را توضیح دهد؛ دستیار زمینه مکالمه را حفظ می‌کند.
+2. **تشخیص قصد (Intent)** — پیام کاربر با AI تحلیل می‌شود تا مشخص شود دنبال چه محصولی است (رینگ، باتری، لاستیک و …) و چه ویژگی‌هایی مدنظر دارد (خودرو، سایز، رنگ، برند).
+3. **جستجوی هوشمند** — درخواست زبان طبیعی به فیلترهای ساختاریافته ووکامرس (ویژگی‌های سراسری مثل `pa_vehicle`، `pa_wheel-size`) تبدیل می‌شود.
+4. **جستجوی معمولی** — اگر کاربر نام دقیق محصول را بگوید، جستجوی متنی استاندارد ووکامرس به‌عنوان fallback اجرا می‌شود.
+5. **رتبه‌بندی محصولات** — نتایج بر اساس تطابق با خودرو، سایز، رنگ، برند، نوع محصول و موجودی امتیازدهی و مرتب می‌شوند.
+6. **پاسخ‌گویی با AI** — پاسخ نهایی با مدل زبانی انتخاب‌شده تولید می‌شود؛ قیمت و موجودی فقط از داده‌های واقعی ووکامرس خوانده می‌شود.
+7. **پنل مدیریت کامل** — تنظیم ارائه‌دهنده AI، قوانین، پرامپت، ظاهر چت‌بات، لاگ‌ها و ابزار تشخیص مشکل.
 
-## Installation
+---
 
-1. Copy the `smart-shop-ai` folder to `wp-content/plugins/`
-2. Activate the plugin in WordPress admin
-3. Go to **Smart Shop AI** in the admin menu
-4. Configure AI Provider (API key, model, endpoint)
-5. Map WooCommerce attributes (Vehicle, Wheel Size, Color, etc.)
-6. Review AI Rules and System Prompt
-7. Run Diagnostics to verify everything works
+## قابلیت‌ها
 
-## Quick Setup
+### چت‌بات و تجربه کاربری
 
-1. **AI Provider** → Set API key and model (e.g. `gpt-4o-mini`)
-2. **MCP Settings** → Use "WooCommerce Direct" (default) or connect external MCP
-3. **Product Search** → Map attributes: `vehicle` → `pa_vehicle`, `wheel_size` → `pa_wheel-size`, etc.
-4. **AI Rules** → Review default rules (size followup, stock filter, etc.)
-5. **Diagnostics** → Run test query: `برای پژو 206 رینگ 16 میخوام`
+| قابلیت | توضیح |
+|--------|--------|
+| ویجت چت شناور | دکمه شناور در گوشه صفحه با انیمیشن و موقعیت قابل تنظیم |
+| سفارشی‌سازی ظاهر | عنوان، ایموجی آواتار، رنگ‌ها، گوشه‌های گرد، اندازه فونت |
+| پیام خوش‌آمد | متن خوش‌آمدگویی قابل ویرایش (پیش‌فرض فارسی) |
+| دکمه‌های سریع | میانبرهایی مثل «پیدا کردن رینگ»، «پیدا کردن باتری»، «پیدا کردن لاستیک» |
+| افزودن به سبد خرید | امکان افزودن محصول به سبد از داخل چت (قابل فعال/غیرفعال کردن) |
 
-## Architecture
+### هوش مصنوعی
+
+| قابلیت | توضیح |
+|--------|--------|
+| چند ارائه‌دهنده | OpenAI، Anthropic (Claude)، Google Gemini، OpenAI-Compatible |
+| سرویس‌های سازگار | OpenRouter، Groq، Together AI، DeepSeek، Mistral، Perplexity و … |
+| تنظیمات مدل | انتخاب مدل، دما (temperature)، حداکثر توکن، timeout |
+| پرامپت سیستمی | پرامپت سراسری قابل ویرایش برای کنترل رفتار دستیار |
+| قوانین AI | قوانین با اولویت و وضعیت فعال/غیرفعال (مثلاً پرسیدن سایز رینگ، فیلتر موجودی) |
+
+### جستجو و محصولات
+
+| قابلیت | توضیح |
+|--------|--------|
+| جستجوی هوشمند | تبدیل زبان طبیعی به ویژگی‌های ووکامرس |
+| جستجوی معمولی | جستجوی متنی محصولات |
+| کشف خودکار ویژگی‌ها | شناسایی ویژگی‌های سراسری ووکامرس و نگاشت آن‌ها |
+| رتبه‌بندی | امتیاز تطابق بر اساس خودرو (۳۰٪)، سایز (۲۵٪)، رنگ (۱۵٪)، برند (۱۵٪)، نوع محصول (۱۰٪)، موجودی (۵٪) |
+| MCP | اتصال مستقیم به ووکامرس یا سرویس خارجی WooCommerce MCP |
+
+### کنترل دسترسی AI (Capabilities)
+
+می‌توانید مشخص کنید دستیار چه کارهایی مجاز است:
+
+- جستجوی محصولات
+- جستجو بر اساس ویژگی‌ها
+- دریافت جزئیات محصول
+- بررسی موجودی
+- بررسی قیمت
+- افزودن به سبد خرید
+- پیشنهاد محصول
+- پرسیدن سؤال تکمیلی
+- مقایسه محصولات
+
+### مدیریت و عیب‌یابی
+
+| قابلیت | توضیح |
+|--------|--------|
+| لاگ مکالمات | ذخیره intent، کوئری جستجو، محصولات یافت‌شده و زمان پاسخ |
+| تشخیص سلامت سیستم | بررسی اتصال AI، MCP، ووکامرس و نگاشت ویژگی‌ها |
+| اجرای تست | ارسال کوئری آزمایشی از پنل مدیریت |
+| امنیت | nonce در REST API، بررسی سطح دسترسی مدیر، ماسک کردن API key |
+
+---
+
+## پیش‌نیازها
+
+- **WordPress** 6.0 یا بالاتر
+- **PHP** 7.4 یا بالاتر
+- **WooCommerce** 7.0 یا بالاتر (تست‌شده تا نسخه ۹.۰)
+
+---
+
+## نصب
+
+1. پوشه `smart-shop-ai` را در `wp-content/plugins/` کپی کنید.
+2. از بخش **افزونه‌ها** در پیشخوان وردپرس، افزونه را فعال کنید.
+3. از منوی **Smart Shop AI** وارد پنل تنظیمات شوید.
+4. ارائه‌دهنده AI را پیکربندی کنید (API key و مدل).
+5. ویژگی‌های ووکامرس را نگاشت کنید (خودرو، سایز رینگ، رنگ و …).
+6. قوانین AI و پرامپت سیستمی را بازبینی کنید.
+7. از بخش **Diagnostics** صحت عملکرد را بررسی کنید.
+
+---
+
+## راه‌اندازی سریع
+
+| مرحله | کار |
+|-------|-----|
+| 1. AI Provider | کلید API و مدل را تنظیم کنید (مثلاً `gpt-4o-mini`) |
+| 2. MCP Settings | حالت پیش‌فرض «WooCommerce Direct» را نگه دارید یا MCP خارجی وصل کنید |
+| 3. Product Search | ویژگی‌ها را نگاشت کنید: `vehicle` → `pa_vehicle`، `wheel_size` → `pa_wheel-size` و … |
+| 4. AI Rules | قوانین پیش‌فرض را بازبینی کنید (پرسیدن سایز، فیلتر موجودی و …) |
+| 5. Diagnostics | کوئری تست بزنید: `برای پژو 206 رینگ 16 میخوام` |
+
+---
+
+## صفحات پنل مدیریت
+
+| صفحه | کاربرد |
+|------|--------|
+| Dashboard | نمای کلی وضعیت افزونه |
+| Chatbot | فعال/غیرفعال کردن چت، پیام خوش‌آمد، دکمه‌های سریع، ظاهر |
+| AI Provider | انتخاب ارائه‌دهنده، endpoint، مدل و کلید API |
+| MCP Settings | انتخاب منبع داده ووکامرس (مستقیم یا MCP خارجی) |
+| Product Search | نگاشت ویژگی‌های ووکامرس |
+| AI Rules | مدیریت قوانین رفتاری دستیار |
+| System Prompt | ویرایش پرامپت سراسری |
+| Capabilities | فعال/غیرفعال کردن قابلیت‌های دستیار |
+| Conversation Logs | مشاهده لاگ مکالمات |
+| Diagnostics | تست اتصال و عیب‌یابی |
+
+---
+
+## معماری
 
 ```
 smart-shop-ai/
-├── smart-shop-ai.php          # Plugin bootstrap
+├── smart-shop-ai.php          # نقطه ورود افزونه
 ├── includes/
-│   ├── Core/                  # Plugin, Settings, Logger, Activator
-│   ├── AI/                    # Providers, AIService, IntentParser
-│   ├── MCP/                   # MCP providers, MCPService
-│   ├── WooCommerce/           # AttributeDiscovery, ProductSearcher
-│   ├── Search/                # SmartSearch, NormalSearch, SearchRouter
+│   ├── Core/                  # Plugin، Settings، Logger، Activator
+│   ├── AI/                    # ارائه‌دهندگان AI، AIService، IntentParser
+│   ├── MCP/                   # ارائه‌دهندگان MCP، MCPService
+│   ├── WooCommerce/           # AttributeDiscovery، ProductSearcher
+│   ├── Search/                # SmartSearch، NormalSearch، SearchRouter
 │   ├── Recommendation/        # ProductRanker
 │   ├── Rules/                 # RulesManager
-│   ├── REST/                  # Chat, Settings, Diagnostics controllers
-│   ├── Admin/                 # Admin menu
-│   └── Frontend/              # Chatbot loader
-├── admin/                     # Admin CSS/JS
-├── frontend/                  # Chatbot CSS/JS
-└── templates/                 # Admin and frontend templates
+│   ├── REST/                  # Chat، Settings، Diagnostics
+│   ├── Admin/                 # منوی مدیریت
+│   └── Frontend/              # بارگذاری چت‌بات
+├── admin/                     # CSS/JS پنل مدیریت
+├── frontend/                  # CSS/JS چت‌بات
+└── templates/                 # قالب‌های admin و frontend
 ```
+
+### جریان پردازش یک پیام
+
+```
+پیام کاربر
+    ↓
+استخراج Intent (AI + IntentParser)
+    ↓
+مسیریابی جستجو (SearchRouter)
+    ├── جستجوی هوشمند (بر اساس ویژگی‌ها)
+    └── جستجوی معمولی (بر اساس متن)
+    ↓
+دریافت محصولات از ووکامرس (MCP)
+    ↓
+رتبه‌بندی (ProductRanker)
+    ↓
+تولید پاسخ نهایی (AI)
+    ↓
+نمایش در چت‌بات + ثبت لاگ
+```
+
+---
 
 ## REST API
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/smart-shop-ai/v1/chat` | POST | Send chat message |
-| `/smart-shop-ai/v1/chat/config` | GET | Get chatbot config |
-| `/smart-shop-ai/v1/settings/ai` | GET/POST | AI provider settings |
-| `/smart-shop-ai/v1/settings/mcp` | GET/POST | MCP settings |
-| `/smart-shop-ai/v1/settings/prompt` | GET/POST | System prompt |
-| `/smart-shop-ai/v1/settings/capabilities` | GET/POST | AI capabilities |
-| `/smart-shop-ai/v1/settings/attributes` | GET/POST | Attribute mapping |
-| `/smart-shop-ai/v1/rules` | GET/POST | AI rules CRUD |
-| `/smart-shop-ai/v1/logs` | GET | Conversation logs |
-| `/smart-shop-ai/v1/diagnostics` | GET | System diagnostics |
-| `/smart-shop-ai/v1/diagnostics/test` | POST | Run test query |
-| `/smart-shop-ai/v1/test/ai` | POST | Test AI connection |
-| `/smart-shop-ai/v1/test/mcp` | POST | Test MCP connection |
+| Endpoint | Method | توضیح |
+|----------|--------|--------|
+| `/smart-shop-ai/v1/chat` | POST | ارسال پیام چت |
+| `/smart-shop-ai/v1/chat/config` | GET | دریافت تنظیمات چت‌بات |
+| `/smart-shop-ai/v1/settings/ai` | GET/POST | تنظیمات ارائه‌دهنده AI |
+| `/smart-shop-ai/v1/settings/mcp` | GET/POST | تنظیمات MCP |
+| `/smart-shop-ai/v1/settings/prompt` | GET/POST | پرامپت سیستمی |
+| `/smart-shop-ai/v1/settings/capabilities` | GET/POST | قابلیت‌های AI |
+| `/smart-shop-ai/v1/settings/attributes` | GET/POST | نگاشت ویژگی‌ها |
+| `/smart-shop-ai/v1/rules` | GET/POST | مدیریت قوانین AI |
+| `/smart-shop-ai/v1/logs` | GET | لاگ مکالمات |
+| `/smart-shop-ai/v1/diagnostics` | GET | تشخیص سلامت سیستم |
+| `/smart-shop-ai/v1/diagnostics/test` | POST | اجرای کوئری تست |
+| `/smart-shop-ai/v1/test/ai` | POST | تست اتصال AI |
+| `/smart-shop-ai/v1/test/mcp` | POST | تست اتصال MCP |
 
-## Test Scenarios
+---
 
-| Query | Expected Behavior |
-|-------|-------------------|
-| `برای پژو 206 رینگ میخوام` | Detect wheel intent, ask about size |
-| `برای پژو 206 رینگ 16 میخوام` | Find compatible products |
-| `رینگ اسپرت مشکی سایز 17 میخوام` | Search by attributes |
-| `رینگ مدل X رو میخوام` | Normal product search |
-| `باتری مناسب پژو 405 میخوام` | Change product type to battery |
-| `ارزون‌ترین رینگ مناسب 206` | Find and rank by price |
+## سناریوهای تست
 
-## Security
+| کوئری نمونه | رفتار مورد انتظار |
+|-------------|-------------------|
+| `برای پژو 206 رینگ میخوام` | تشخیص intent رینگ، پرسیدن سایز |
+| `برای پژو 206 رینگ 16 میخوام` | یافتن محصولات سازگار |
+| `رینگ اسپرت مشکی سایز 17 میخوام` | جستجو بر اساس ویژگی‌ها |
+| `رینگ مدل X رو میخوام` | جستجوی معمولی محصول |
+| `باتری مناسب پژو 405 میخوام` | تغییر نوع محصول به باتری |
+| `ارزون‌ترین رینگ مناسب 206` | یافتن و مرتب‌سازی بر اساس قیمت |
 
-- Nonce verification on REST API
-- Capability checks (`manage_options`) on admin endpoints
-- Input sanitization and output escaping
-- API keys masked in admin UI
-- Sensitive data excluded from conversation logs
+---
 
-## License
+## امنیت
+
+- تأیید nonce در REST API
+- بررسی سطح دسترسی (`manage_options`) برای endpointهای مدیریتی
+- sanitize ورودی‌ها و escape خروجی‌ها
+- ماسک کردن کلیدهای API در رابط مدیریت
+- حذف داده‌های حساس از لاگ مکالمات
+
+---
+
+## مجوز
 
 GPL-2.0+
