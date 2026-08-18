@@ -1,0 +1,320 @@
+/* Smart Shop AI — Chatbot Frontend */
+
+.ssai-chatbot-root {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.ssai-chat-toggle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ssai-chat-toggle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(79, 70, 229, 0.5);
+}
+
+.ssai-chat-window {
+  position: absolute;
+  bottom: 72px;
+  right: 0;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  height: 560px;
+  max-height: calc(100vh - 120px);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ssai-slide-up 0.3s ease;
+}
+
+@keyframes ssai-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ssai-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+}
+
+.ssai-chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ssai-chat-avatar {
+  font-size: 28px;
+}
+
+.ssai-chat-status {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.ssai-chat-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.ssai-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8f9fb;
+}
+
+.ssai-message {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.ssai-message-user {
+  align-self: flex-end;
+  background: #4f46e5;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.ssai-message-bot {
+  align-self: flex-start;
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-bottom-left-radius: 4px;
+}
+
+.ssai-message-loading {
+  align-self: flex-start;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.ssai-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #f8f9fb;
+}
+
+.ssai-quick-action {
+  padding: 6px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.ssai-quick-action:hover {
+  background: #4f46e5;
+  color: #fff;
+  border-color: #4f46e5;
+}
+
+.ssai-chat-input-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.ssai-chat-input {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  padding: 10px 16px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.ssai-chat-input:focus {
+  border-color: #4f46e5;
+}
+
+.ssai-chat-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.ssai-chat-send:hover {
+  background: #4338ca;
+}
+
+.ssai-chat-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Product Cards */
+.ssai-products {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.ssai-product-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  transition: box-shadow 0.15s;
+}
+
+.ssai-product-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ssai-product-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ssai-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ssai-product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+
+.ssai-product-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4f46e5;
+  margin: 0 0 4px;
+}
+
+.ssai-product-stock {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.ssai-product-stock.in-stock {
+  color: #059669;
+}
+
+.ssai-product-stock.out-of-stock {
+  color: #dc2626;
+}
+
+.ssai-product-score {
+  font-size: 11px;
+  background: #ede9fe;
+  color: #4f46e5;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.ssai-product-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ssai-product-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.ssai-product-btn-view {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.ssai-product-btn-view:hover {
+  background: #e5e7eb;
+}
+
+.ssai-product-btn-cart {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.ssai-product-btn-cart:hover {
+  background: #4338ca;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .ssai-chatbot-root {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .ssai-chat-window {
+    width: calc(100vw - 32px);
+    height: calc(100vh - 100px);
+    bottom: 68px;
+    right: 0;
+    border-radius: 12px;
+  }
+}
