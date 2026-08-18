@@ -6,6 +6,7 @@ use SmartShopAI\AI\Providers\OpenAIProvider;
 use SmartShopAI\AI\Providers\AnthropicProvider;
 use SmartShopAI\AI\Providers\GeminiProvider;
 use SmartShopAI\AI\Providers\OpenAICompatibleProvider;
+use SmartShopAI\AI\Providers\ReplicateProvider;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -31,6 +32,8 @@ class AIService {
 		$provider = $settings['provider'];
 
 		switch ( $provider ) {
+			case 'replicate':
+				return new ReplicateProvider( $settings );
 			case 'anthropic':
 				return new AnthropicProvider( $settings );
 			case 'gemini':

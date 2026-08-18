@@ -196,11 +196,33 @@ class Settings {
 				'endpoint' => 'https://api.together.xyz/v1/chat/completions',
 				'model'    => 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
 			),
+			'replicate' => array(
+				'label'    => 'Replicate',
+				'endpoint' => 'https://api.replicate.com/v1/predictions',
+				'model'    => 'openai/gpt-5.1',
+			),
 			'custom' => array(
 				'label'    => 'Custom Endpoint',
 				'endpoint' => '',
 				'model'    => '',
 			),
+		);
+	}
+
+	/**
+	 * Popular Replicate official language models.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function get_replicate_model_presets(): array {
+		return array(
+			'openai/gpt-5.1'                   => 'OpenAI GPT-5.1',
+			'openai/gpt-4o'                     => 'OpenAI GPT-4o',
+			'openai/gpt-4o-mini'                => 'OpenAI GPT-4o Mini',
+			'meta/meta-llama-3-70b-instruct'    => 'Meta Llama 3 70B Instruct',
+			'meta/meta-llama-3-8b-instruct'     => 'Meta Llama 3 8B Instruct',
+			'anthropic/claude-3.5-sonnet'       => 'Anthropic Claude 3.5 Sonnet',
+			'anthropic/claude-3.7-sonnet'       => 'Anthropic Claude 3.7 Sonnet',
 		);
 	}
 

@@ -42,6 +42,7 @@ class Plugin {
 		require_once $base . 'AI/Providers/AnthropicProvider.php';
 		require_once $base . 'AI/Providers/GeminiProvider.php';
 		require_once $base . 'AI/Providers/OpenAICompatibleProvider.php';
+		require_once $base . 'AI/Providers/ReplicateProvider.php';
 		require_once $base . 'AI/AIService.php';
 		require_once $base . 'AI/AIModelFetcher.php';
 		require_once $base . 'AI/IntentParser.php';

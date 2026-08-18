@@ -41,6 +41,10 @@ class AIModelFetcher {
 			return $this->fetch_anthropic( $api_key );
 		}
 
+		if ( 'replicate' === $provider ) {
+			return $this->fetch_replicate( $api_key );
+		}
+
 		return $this->fetch_openai_compatible( $provider, $endpoint, $api_key );
 	}
 
@@ -130,6 +134,55 @@ class AIModelFetcher {
 		}
 
 		return $this->finalize_models( $models, 'No Claude models found.' );
+	}
+
+	/**
+	 * @return array{success:bool,models:array<int,array{id:string,label:string}>,error:string}
+	 */
+	private function fetch_replicate( string $api_key ): array {
+		$models = array();
+		foreach ( Settings::get_replicate_model_presets() as $id => $label ) {
+			$models[] = array(
+				'id'    => $id,
+				'label' => $label,
+			);
+		}
+
+		$response = wp_remote_request(
+			'https://api.replicate.com/v1/models',
+			array(
+				'method'  => 'QUERY',
+				'timeout' => 30,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $api_key,
+					'Content-Type'  => 'text/plain',
+				),
+				'body'    => 'gpt llama claude openai meta anthropic',
+			)
+		);
+
+		if ( ! is_wp_error( $response ) ) {
+			$code = wp_remote_retrieve_response_code( $response );
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+			if ( $code >= 200 && $code < 300 && is_array( $body ) ) {
+				foreach ( $body['results'] ?? $body['models'] ?? array() as $model ) {
+					$owner = (string) ( $model['owner'] ?? '' );
+					$name  = (string) ( $model['name'] ?? '' );
+					if ( '' === $owner || '' === $name ) {
+						continue;
+					}
+
+					$id = $owner . '/' . $name;
+					$models[] = array(
+						'id'    => $id,
+						'label' => (string) ( $model['description'] ?? $name ),
+					);
+				}
+			}
+		}
+
+		return $this->finalize_models( $models, 'No Replicate models found.' );
 	}
 
 	/**

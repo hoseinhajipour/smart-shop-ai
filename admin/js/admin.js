@@ -54,6 +54,7 @@
       openrouter: { endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'openai/gpt-4o-mini', hint: 'Get your API key from openrouter.ai — access 100+ models' },
       groq: { endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile', hint: 'Get your API key from console.groq.com' },
       together: { endpoint: 'https://api.together.xyz/v1/chat/completions', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', hint: 'Get your API key from api.together.xyz' },
+      replicate: { endpoint: 'https://api.replicate.com/v1/predictions', model: 'openai/gpt-5.1', hint: 'Get your API token from replicate.com/account/api-tokens' },
       custom: { endpoint: '', model: '', hint: 'Select a preset endpoint or enter your own URL' },
     };
 
@@ -151,13 +152,21 @@
         if (preset.model) {
           populateModelOptions([{ id: preset.model, label: preset.model }], preset.model);
         }
+        if (provider === 'replicate') {
+          const timeoutInput = document.getElementById('timeout');
+          if (timeoutInput) timeoutInput.value = 60;
+        }
       }
 
       if (endpointHint) endpointHint.textContent = preset.hint || '';
       if (modelHint) {
-        modelHint.textContent = provider === 'openrouter'
-          ? 'Use provider/model format, e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet'
-          : 'Click "Fetch Models" after entering your API key to load available models.';
+        if (provider === 'openrouter') {
+          modelHint.textContent = 'Use provider/model format, e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet';
+        } else if (provider === 'replicate') {
+          modelHint.textContent = 'Use owner/model format, e.g. openai/gpt-5.1. See replicate.com/openai/gpt-5.1/api/schema';
+        } else {
+          modelHint.textContent = 'Click "Fetch Models" after entering your API key to load available models.';
+        }
       }
 
       endpointInput.readOnly = provider !== 'custom';

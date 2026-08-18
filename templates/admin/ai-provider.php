@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<option value="openrouter">OpenRouter</option>
 						<option value="groq">Groq</option>
 						<option value="together">Together AI</option>
+						<option value="replicate">Replicate</option>
 						<option value="custom"><?php esc_html_e( 'Custom Endpoint', 'smart-shop-ai' ); ?></option>
 					</select>
 					<p class="description"><?php esc_html_e( 'Select a provider preset or choose Custom for your own endpoint.', 'smart-shop-ai' ); ?></p>
