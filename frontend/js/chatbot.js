@@ -98,7 +98,7 @@
       initChat();
     }
     setAvatarState('idle');
-    setStatus('آنلاین');
+    setStatus('Online');
     inputEl.focus();
   }
 
@@ -122,7 +122,7 @@
   }
 
   function initChat() {
-    const welcome = config.welcome || 'سلام 👋 چه محصولی دنبالش می‌گردی؟';
+    const welcome = config.welcome || 'Hi 👋 What product are you looking for?';
     addMessage(welcome, 'bot', true);
     renderQuickActions();
   }
@@ -191,12 +191,12 @@
       }
 
       setAvatarState('idle');
-      setStatus('آنلاین');
+      setStatus('Online');
     } catch (err) {
       removeTypingIndicator();
       setAvatarState('idle');
-      setStatus('آنلاین');
-      addMessage('خطایی رخ داد. لطفاً دوباره تلاش کنید.', 'bot');
+      setStatus('Online');
+      addMessage('Something went wrong. Please try again.', 'bot');
       console.error('SSAI Chat error:', err);
     }
 
@@ -216,7 +216,7 @@
 
   async function addMessageAnimated(text, type) {
     setAvatarState('speaking');
-    setStatus('در حال پاسخ...');
+    setStatus('Replying...');
 
     const div = document.createElement('div');
     div.className = 'ssai-message ssai-message-' + type + ' ssai-message-enter';
@@ -236,7 +236,7 @@
           setTimeout(typeChar, speed);
         } else {
           setAvatarState('idle');
-          setStatus('آنلاین');
+          setStatus('Online');
           resolve();
         }
       }
@@ -246,7 +246,7 @@
 
   function showTypingIndicator() {
     setAvatarState('thinking');
-    setStatus('در حال فکر کردن...');
+    setStatus('Thinking...');
 
     const div = document.createElement('div');
     div.className = 'ssai-typing-indicator';
@@ -255,7 +255,7 @@
       '<div class="ssai-typing-avatar">' + (appearance.avatar_emoji || '🤖') + '</div>' +
       '<div class="ssai-typing-bubble">' +
         '<span class="ssai-typing-dots"><span></span><span></span><span></span></span>' +
-        '<span class="ssai-typing-text">در حال جستجو...</span>' +
+        '<span class="ssai-typing-text">Searching...</span>' +
       '</div>';
     messagesEl.appendChild(div);
     scrollToBottom();
@@ -301,7 +301,7 @@
 
       const stock = document.createElement('span');
       stock.className = 'ssai-product-stock ' + (product.in_stock ? 'in-stock' : 'out-of-stock');
-      stock.textContent = product.in_stock ? 'موجود' : 'ناموجود';
+      stock.textContent = product.in_stock ? 'In stock' : 'Out of stock';
 
       info.appendChild(name);
       info.appendChild(price);
@@ -310,7 +310,7 @@
       if (product.match_score) {
         const score = document.createElement('span');
         score.className = 'ssai-product-score';
-        score.textContent = product.match_label || 'تطابق: ' + product.match_score + '%';
+        score.textContent = product.match_label || 'Match: ' + product.match_score + '%';
         info.appendChild(score);
       }
 
@@ -322,14 +322,14 @@
         viewBtn.className = 'ssai-product-btn ssai-product-btn-view';
         viewBtn.href = product.url;
         viewBtn.target = '_blank';
-        viewBtn.textContent = 'مشاهده';
+        viewBtn.textContent = 'View';
         actions.appendChild(viewBtn);
       }
 
       if (product.in_stock && product.id) {
         const cartBtn = document.createElement('button');
         cartBtn.className = 'ssai-product-btn ssai-product-btn-cart';
-        cartBtn.textContent = 'افزودن به سبد';
+        cartBtn.textContent = 'Add to cart';
         cartBtn.addEventListener('click', () => addToCart(product.id));
         actions.appendChild(cartBtn);
       }
@@ -358,12 +358,12 @@
 
       const data = await response.json();
       if (data.success) {
-        addMessage('محصول به سبد خرید اضافه شد ✓', 'bot', true);
+        addMessage('Product added to cart ✓', 'bot', true);
       } else {
-        addMessage('خطا در افزودن به سبد خرید.', 'bot');
+        addMessage('Could not add product to cart.', 'bot');
       }
     } catch (err) {
-      addMessage('خطا در افزودن به سبد خرید.', 'bot');
+      addMessage('Could not add product to cart.', 'bot');
     }
   }
 

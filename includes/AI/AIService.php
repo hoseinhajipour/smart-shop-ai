@@ -165,13 +165,13 @@ PROMPT;
 		$intent_json   = wp_json_encode( $intent_data, JSON_UNESCAPED_UNICODE );
 
 		$response_prompt = <<<PROMPT
-Based on the user's message and the ACTUAL product data from WooCommerce, generate a helpful response in Persian.
+Based on the user's message and the ACTUAL product data from WooCommerce, generate a helpful response in English.
 
 CRITICAL RULES:
 - NEVER invent product information. Only use data from the products list below.
 - If no products found, say so honestly and suggest alternatives.
 - Include match scores when available.
-- Be friendly and professional in Persian.
+- Be friendly and professional in English.
 
 User message: {$user_message}
 
@@ -180,7 +180,7 @@ Extracted intent: {$intent_json}
 Products from WooCommerce (USE ONLY THIS DATA):
 {$products_json}
 
-Respond in Persian. If products were found, briefly explain why they match.
+Respond in English. If products were found, briefly explain why they match.
 PROMPT;
 
 		$messages = array();

@@ -77,6 +77,31 @@
   border: 1px solid #d63638;
 }
 
+.ssai-model-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.ssai-model-field select.regular-text {
+  min-width: 280px;
+  flex: 1 1 280px;
+}
+
+.ssai-model-field #model_custom {
+  flex: 1 1 220px;
+}
+
+.ssai-model-fetch-success {
+  color: #00a32a;
+}
+
+.ssai-model-fetch-error {
+  color: #d63638;
+}
+
 .ssai-rules-list {
   margin-bottom: 24px;
 }

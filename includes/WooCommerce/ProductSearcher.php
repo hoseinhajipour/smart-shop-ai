@@ -210,10 +210,10 @@ class ProductSearcher {
 		}
 
 		$type_labels = array(
-			'wheel'   => 'رینگ',
-			'tire'    => 'لاستیک',
-			'battery' => 'باتری',
-			'parts'   => 'قطعات',
+			'wheel'   => 'wheel',
+			'tire'    => 'tire',
+			'battery' => 'battery',
+			'parts'   => 'parts',
 		);
 
 		if ( $product_type && isset( $type_labels[ $product_type ] ) ) {

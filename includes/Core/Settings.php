@@ -81,7 +81,7 @@ class Settings {
 
 	public static function get_chatbot_appearance(): array {
 		return array(
-			'title'              => self::get( 'chatbot_title', 'دستیار خرید' ),
+			'title'              => self::get( 'chatbot_title', 'Shopping Assistant' ),
 			'avatar_emoji'       => self::get( 'chatbot_avatar_emoji', '🤖' ),
 			'primary_color'      => self::get( 'chatbot_primary_color', '#4f46e5' ),
 			'secondary_color'    => self::get( 'chatbot_secondary_color', '#7c3aed' ),

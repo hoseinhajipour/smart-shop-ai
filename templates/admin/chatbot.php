@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</tr>
 					<tr>
 						<th><label for="chatbot_title"><?php esc_html_e( 'Chat Title', 'smart-shop-ai' ); ?></label></th>
-						<td><input type="text" id="chatbot_title" class="regular-text" value="دستیار خرید" /></td>
+						<td><input type="text" id="chatbot_title" class="regular-text" value="Shopping Assistant" /></td>
 					</tr>
 					<tr>
 						<th><label for="chatbot_avatar_emoji"><?php esc_html_e( 'AI Character', 'smart-shop-ai' ); ?></label></th>
@@ -147,13 +147,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div class="ssai-preview-header">
 							<span class="ssai-preview-avatar">🤖</span>
 							<div>
-								<strong class="ssai-preview-title">دستیار خرید</strong>
-								<span class="ssai-preview-status">آنلاین</span>
+								<strong class="ssai-preview-title">Shopping Assistant</strong>
+								<span class="ssai-preview-status">Online</span>
 							</div>
 						</div>
 						<div class="ssai-preview-messages">
-							<div class="ssai-preview-msg bot">سلام 👋 چطور می‌تونم کمکتون کنم؟</div>
-							<div class="ssai-preview-msg user">یه رینگ مناسب می‌خوام</div>
+							<div class="ssai-preview-msg bot">Hi 👋 How can I help you today?</div>
+							<div class="ssai-preview-msg user">I need wheels for my car</div>
 							<div class="ssai-preview-typing">
 								<span class="ssai-preview-avatar-sm">🤖</span>
 								<span class="ssai-typing-dots"><span></span><span></span><span></span></span>

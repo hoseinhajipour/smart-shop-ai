@@ -102,28 +102,28 @@ class RulesManager {
 
 		$defaults = array(
 			array(
-				'title'     => 'سایز رینگ',
-				'rule_text' => 'اگر کاربر درباره رینگ سؤال کرد و سایز را مشخص نکرد، قبل از پیشنهاد محصول درباره سایز سؤال کن.',
+				'title'     => 'Wheel size',
+				'rule_text' => 'If the user asks about wheels without specifying a size, ask about the size before recommending products.',
 				'priority'  => 1,
 			),
 			array(
-				'title'     => 'موجودی',
-				'rule_text' => 'هیچ محصولی که موجود نیست پیشنهاد نده.',
+				'title'     => 'Stock availability',
+				'rule_text' => 'Do not recommend products that are out of stock.',
 				'priority'  => 2,
 			),
 			array(
-				'title'     => 'قیمت واقعی',
-				'rule_text' => 'اگر کاربر درباره قیمت سؤال کرد، قیمت واقعی WooCommerce را نمایش بده. هرگز قیمت را حدس نزن.',
+				'title'     => 'Real pricing',
+				'rule_text' => 'If the user asks about price, show the real WooCommerce price. Never guess prices.',
 				'priority'  => 3,
 			),
 			array(
-				'title'     => 'عدم پیشنهاد نامرتبط',
-				'rule_text' => 'اگر محصولی پیدا نشد، محصول نامرتبط پیشنهاد نده.',
+				'title'     => 'No irrelevant suggestions',
+				'rule_text' => 'If no matching product is found, do not suggest unrelated products.',
 				'priority'  => 4,
 			),
 			array(
-				'title'     => 'لحن پاسخ',
-				'rule_text' => 'در پاسخ‌ها از لحن دوستانه و حرفه‌ای استفاده کن.',
+				'title'     => 'Response tone',
+				'rule_text' => 'Use a friendly and professional tone in responses.',
 				'priority'  => 5,
 			),
 		);

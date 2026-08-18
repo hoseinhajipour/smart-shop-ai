@@ -188,10 +188,10 @@ class IntentParser {
 		// Re-evaluate followup need.
 		if ( $merged['product_type'] === 'wheel' && empty( $merged['attributes']['size'] ) && empty( $merged['vehicle'] ) ) {
 			$merged['needs_followup'] = true;
-			$merged['followup_question'] = $merged['followup_question'] ?: 'برای چه خودرویی و چه سایزی رینگ می‌خواید؟';
+			$merged['followup_question'] = $merged['followup_question'] ?: 'Which vehicle and wheel size are you looking for?';
 		} elseif ( $merged['product_type'] === 'wheel' && ! empty( $merged['vehicle'] ) && empty( $merged['attributes']['size'] ) ) {
 			$merged['needs_followup'] = true;
-			$merged['followup_question'] = $merged['followup_question'] ?: 'چه سایزی رینگ مدنظرتونه؟ (مثلاً 15، 16، 17)';
+			$merged['followup_question'] = $merged['followup_question'] ?: 'What wheel size do you need? (e.g. 15, 16, 17)';
 		}
 
 		return $merged;

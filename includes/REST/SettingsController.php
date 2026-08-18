@@ -3,6 +3,7 @@ namespace SmartShopAI\REST;
 
 use SmartShopAI\Core\Settings;
 use SmartShopAI\AI\AIService;
+use SmartShopAI\AI\AIModelFetcher;
 use SmartShopAI\MCP\MCPService;
 use SmartShopAI\WooCommerce\AttributeDiscovery;
 use SmartShopAI\Rules\RulesManager;
@@ -151,6 +152,12 @@ class SettingsController {
 		register_rest_route( self::NAMESPACE, '/test/mcp', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'test_mcp_connection' ),
+			'permission_callback' => array( $this, 'check_admin' ),
+		) );
+
+		register_rest_route( self::NAMESPACE, '/settings/ai/models', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'fetch_ai_models' ),
 			'permission_callback' => array( $this, 'check_admin' ),
 		) );
 	}
@@ -366,5 +373,20 @@ class SettingsController {
 		$mcp    = new MCPService();
 		$result = $mcp->test_connection();
 		return new WP_REST_Response( $result, $result['success'] ? 200 : 500 );
+	}
+
+	public function fetch_ai_models( WP_REST_Request $request ): WP_REST_Response {
+		$params = $request->get_json_params() ?: $request->get_params();
+
+		$fetcher = new AIModelFetcher();
+		$result  = $fetcher->fetch(
+			array(
+				'provider' => sanitize_text_field( $params['provider'] ?? '' ),
+				'endpoint' => esc_url_raw( $params['endpoint'] ?? '' ),
+				'api_key'  => sanitize_text_field( $params['api_key'] ?? '' ),
+			)
+		);
+
+		return new WP_REST_Response( $result, $result['success'] ? 200 : 400 );
 	}
 }

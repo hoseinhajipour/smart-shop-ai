@@ -57,8 +57,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<tr>
 				<th><label for="model"><?php esc_html_e( 'Model', 'smart-shop-ai' ); ?></label></th>
 				<td>
-					<input type="text" id="model" name="model" class="regular-text" placeholder="gpt-4o-mini" />
+					<div class="ssai-model-field">
+						<select id="model" name="model" class="regular-text">
+							<option value=""><?php esc_html_e( '— Select model —', 'smart-shop-ai' ); ?></option>
+						</select>
+						<input type="text" id="model_custom" class="regular-text" placeholder="<?php esc_attr_e( 'Enter custom model ID', 'smart-shop-ai' ); ?>" style="display:none;" />
+						<button type="button" id="ssai-fetch-models" class="button"><?php esc_html_e( 'Fetch Models', 'smart-shop-ai' ); ?></button>
+					</div>
 					<p class="description" id="ssai-model-hint"></p>
+					<p class="description" id="ssai-model-fetch-status"></p>
 				</td>
 			</tr>
 			<tr>

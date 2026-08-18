@@ -75,9 +75,9 @@ class Activator {
 			'attribute_mapping' => array(),
 			'capabilities'      => self::default_capabilities(),
 			'chatbot_enabled'           => true,
-			'chatbot_welcome'           => 'سلام 👋 چه محصولی دنبالش می‌گردی؟',
+			'chatbot_welcome'           => 'Hi 👋 What product are you looking for?',
 			'quick_actions'             => self::default_quick_actions(),
-			'chatbot_title'             => 'دستیار خرید',
+			'chatbot_title'             => 'Shopping Assistant',
 			'chatbot_avatar_emoji'      => '🤖',
 			'chatbot_primary_color'     => '#4f46e5',
 			'chatbot_secondary_color'   => '#7c3aed',
@@ -102,11 +102,11 @@ class Activator {
 	}
 
 	private static function default_system_prompt(): string {
-		return 'تو دستیار خرید فروشگاه هستی. وظیفه تو کمک به مشتری برای پیدا کردن محصول مناسب است.
-هیچ‌وقت اطلاعات محصول را حدس نزن.
-اطلاعات قیمت، موجودی و مشخصات را فقط از WooCommerce دریافت کن.
-اگر اطلاعات کافی نداری، از مشتری سؤال بپرس.
-پاسخ‌ها را به زبان فارسی و با لحن دوستانه و حرفه‌ای بده.';
+		return 'You are the store shopping assistant. Your job is to help customers find the right products.
+Never guess product information.
+Only use WooCommerce for price, stock, and product details.
+If you do not have enough information, ask the customer follow-up questions.
+Respond in English with a friendly, professional tone.';
 	}
 
 	private static function default_capabilities(): array {
@@ -125,10 +125,10 @@ class Activator {
 
 	private static function default_quick_actions(): array {
 		return array(
-			array( 'icon' => '🚗', 'label' => 'پیدا کردن رینگ', 'query' => 'برای خودرویم رینگ می‌خوام' ),
-			array( 'icon' => '🔋', 'label' => 'پیدا کردن باتری', 'query' => 'باتری مناسب خودرویم می‌خوام' ),
-			array( 'icon' => '🛞', 'label' => 'پیدا کردن لاستیک', 'query' => 'لاستیک مناسب خودرویم می‌خوام' ),
-			array( 'icon' => '🔎', 'label' => 'جستجوی محصول', 'query' => 'جستجوی محصول' ),
+			array( 'icon' => '🚗', 'label' => 'Find wheels', 'query' => 'I need wheels for my car' ),
+			array( 'icon' => '🔋', 'label' => 'Find a battery', 'query' => 'I need a battery for my car' ),
+			array( 'icon' => '🛞', 'label' => 'Find tires', 'query' => 'I need tires for my car' ),
+			array( 'icon' => '🔎', 'label' => 'Search products', 'query' => 'Search products' ),
 		);
 	}
 }

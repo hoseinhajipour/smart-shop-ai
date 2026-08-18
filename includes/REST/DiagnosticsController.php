@@ -69,7 +69,7 @@ class DiagnosticsController {
 	}
 
 	public function run_test_query( WP_REST_Request $request ): WP_REST_Response {
-		$query = sanitize_textarea_field( $request->get_param( 'query' ) ?: 'برای پژو 206 رینگ 16 میخوام' );
+		$query = sanitize_textarea_field( $request->get_param( 'query' ) ?: 'I need 16 inch wheels for Peugeot 206' );
 
 		$ai_service    = new AIService();
 		$intent_parser = new IntentParser();

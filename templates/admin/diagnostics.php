@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<h2><?php esc_html_e( 'Test Query', 'smart-shop-ai' ); ?></h2>
 	<div class="ssai-test-query-area">
-		<input type="text" id="ssai-test-query" class="regular-text" value="برای پژو 206 رینگ 16 میخوام" style="width: 100%; max-width: 500px;" />
+		<input type="text" id="ssai-test-query" class="regular-text" value="I need 16 inch wheels for Peugeot 206" style="width: 100%; max-width: 500px;" />
 		<button type="button" id="ssai-run-test" class="button button-primary"><?php esc_html_e( 'Run Test', 'smart-shop-ai' ); ?></button>
 	</div>
 

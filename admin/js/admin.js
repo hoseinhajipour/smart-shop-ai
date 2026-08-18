@@ -59,11 +59,84 @@
 
     const providerSelect = document.getElementById('provider');
     const endpointInput = document.getElementById('endpoint');
-    const modelInput = document.getElementById('model');
+    const modelSelect = document.getElementById('model');
+    const modelCustomInput = document.getElementById('model_custom');
     const endpointHint = document.getElementById('ssai-endpoint-hint');
     const modelHint = document.getElementById('ssai-model-hint');
+    const modelFetchStatus = document.getElementById('ssai-model-fetch-status');
+    const fetchModelsBtn = document.getElementById('ssai-fetch-models');
     const customPresetRow = document.getElementById('ssai-custom-endpoint-preset-row');
     const customPresetSelect = document.getElementById('custom_endpoint_preset');
+    const CUSTOM_MODEL_VALUE = '__custom__';
+
+    function getSelectedModel() {
+      if (!modelSelect) return '';
+      if (modelSelect.value === CUSTOM_MODEL_VALUE) {
+        return modelCustomInput ? modelCustomInput.value.trim() : '';
+      }
+      return modelSelect.value;
+    }
+
+    function setSelectedModel(modelId) {
+      if (!modelSelect || !modelId) return;
+
+      ensureCustomModelOption();
+
+      const existing = Array.from(modelSelect.options).some((opt) => opt.value === modelId);
+      if (!existing) {
+        const opt = document.createElement('option');
+        opt.value = modelId;
+        opt.textContent = modelId;
+        const customOpt = modelSelect.querySelector('option[value="' + CUSTOM_MODEL_VALUE + '"]');
+        if (customOpt) {
+          modelSelect.insertBefore(opt, customOpt);
+        } else {
+          modelSelect.appendChild(opt);
+        }
+      }
+
+      modelSelect.value = modelId;
+      if (modelCustomInput) {
+        modelCustomInput.style.display = 'none';
+        modelCustomInput.value = '';
+      }
+    }
+
+    function ensureCustomModelOption() {
+      if (!modelSelect || modelSelect.querySelector('option[value="' + CUSTOM_MODEL_VALUE + '"]')) return;
+      const opt = document.createElement('option');
+      opt.value = CUSTOM_MODEL_VALUE;
+      opt.textContent = 'Custom model...';
+      modelSelect.appendChild(opt);
+    }
+
+    function populateModelOptions(models, selectedModel) {
+      if (!modelSelect) return;
+
+      const placeholder = modelSelect.querySelector('option[value=""]');
+      modelSelect.innerHTML = '';
+      if (placeholder) {
+        modelSelect.appendChild(placeholder);
+      } else {
+        const emptyOpt = document.createElement('option');
+        emptyOpt.value = '';
+        emptyOpt.textContent = '— Select model —';
+        modelSelect.appendChild(emptyOpt);
+      }
+
+      models.forEach((model) => {
+        const opt = document.createElement('option');
+        opt.value = model.id;
+        opt.textContent = model.label === model.id ? model.id : model.label + ' (' + model.id + ')';
+        modelSelect.appendChild(opt);
+      });
+
+      ensureCustomModelOption();
+
+      if (selectedModel) {
+        setSelectedModel(selectedModel);
+      }
+    }
 
     function applyProviderPreset(provider, keepExisting) {
       const preset = PROVIDER_PRESETS[provider];
@@ -75,21 +148,33 @@
 
       if (!keepExisting) {
         if (preset.endpoint) endpointInput.value = preset.endpoint;
-        if (preset.model) modelInput.value = preset.model;
+        if (preset.model) {
+          populateModelOptions([{ id: preset.model, label: preset.model }], preset.model);
+        }
       }
 
       if (endpointHint) endpointHint.textContent = preset.hint || '';
       if (modelHint) {
         modelHint.textContent = provider === 'openrouter'
           ? 'Use provider/model format, e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet'
-          : '';
+          : 'Click "Fetch Models" after entering your API key to load available models.';
       }
 
       endpointInput.readOnly = provider !== 'custom';
     }
 
+    if (modelSelect) {
+      modelSelect.addEventListener('change', () => {
+        if (!modelCustomInput) return;
+        const isCustom = modelSelect.value === CUSTOM_MODEL_VALUE;
+        modelCustomInput.style.display = isCustom ? '' : 'none';
+        if (isCustom) modelCustomInput.focus();
+      });
+    }
+
     providerSelect.addEventListener('change', () => {
       applyProviderPreset(providerSelect.value, false);
+      if (modelFetchStatus) modelFetchStatus.textContent = '';
     });
 
     if (customPresetSelect) {
@@ -111,17 +196,65 @@
         providerSelect.value = data.provider === 'openai_compatible' ? 'custom' : data.provider;
       }
       if (data.endpoint) endpointInput.value = data.endpoint;
-      if (data.model) modelInput.value = data.model;
       if (data.temperature) document.getElementById('temperature').value = data.temperature;
       if (data.max_tokens) document.getElementById('max_tokens').value = data.max_tokens;
       if (data.timeout) document.getElementById('timeout').value = data.timeout;
       applyProviderPreset(data.provider || 'openai', true);
+      if (data.model) {
+        populateModelOptions([{ id: data.model, label: data.model }], data.model);
+      } else {
+        ensureCustomModelOption();
+      }
     });
+
+    if (fetchModelsBtn) {
+      fetchModelsBtn.addEventListener('click', async () => {
+        const apiKey = document.getElementById('api_key').value.trim();
+        if (modelFetchStatus) {
+          modelFetchStatus.textContent = 'Fetching models...';
+          modelFetchStatus.className = 'description';
+        }
+        fetchModelsBtn.disabled = true;
+
+        try {
+          const result = await api('/settings/ai/models', {
+            method: 'POST',
+            body: JSON.stringify({
+              provider: providerSelect.value,
+              endpoint: endpointInput.value,
+              api_key: apiKey,
+            }),
+          });
+
+          if (!result.success) {
+            if (modelFetchStatus) {
+              modelFetchStatus.textContent = result.error || 'Could not fetch models.';
+              modelFetchStatus.className = 'description ssai-model-fetch-error';
+            }
+            return;
+          }
+
+          populateModelOptions(result.models || [], getSelectedModel());
+          if (modelFetchStatus) {
+            modelFetchStatus.textContent = (result.models || []).length + ' models loaded.';
+            modelFetchStatus.className = 'description ssai-model-fetch-success';
+          }
+        } catch (err) {
+          if (modelFetchStatus) {
+            modelFetchStatus.textContent = 'Could not fetch models.';
+            modelFetchStatus.className = 'description ssai-model-fetch-error';
+          }
+        } finally {
+          fetchModelsBtn.disabled = false;
+        }
+      });
+    }
 
     aiForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(aiForm);
       const body = Object.fromEntries(formData.entries());
+      body.model = getSelectedModel();
       await api('/settings/ai', { method: 'POST', body: JSON.stringify(body) });
       alert('Settings saved.');
     });

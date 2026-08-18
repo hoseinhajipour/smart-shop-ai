@@ -69,6 +69,7 @@ class ProductRanker {
 			$size = $attrs['size'];
 			if (
 				mb_strpos( $prod_text, (string) $size ) !== false ||
+				mb_strpos( $prod_text, $size . ' inch' ) !== false ||
 				mb_strpos( $prod_text, $size . ' اینچ' ) !== false
 			) {
 				$score += self::WEIGHTS['size'];
@@ -140,14 +141,14 @@ class ProductRanker {
 
 	private function score_label( int $score ): string {
 		if ( $score >= 80 ) {
-			return 'بیشترین تطابق';
+			return 'Best match';
 		}
 		if ( $score >= 60 ) {
-			return 'تطابق خوب';
+			return 'Good match';
 		}
 		if ( $score >= 40 ) {
-			return 'تطابق متوسط';
+			return 'Fair match';
 		}
-		return 'تطابق کم';
+		return 'Low match';
 	}
 }

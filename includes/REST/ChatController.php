@@ -122,7 +122,7 @@ class ChatController {
 				? $ai_response['content']
 				: $this->fallback_response( $products, $intent );
 		} else {
-			$response_data['message'] = 'متأسفانه محصولی مطابق با درخواست شما پیدا نشد. لطفاً جزئیات بیشتری بدهید، مثلاً مدل خودرو و سایز.';
+			$response_data['message'] = 'Sorry, no products matched your request. Please share more details, such as vehicle model and size.';
 		}
 
 		$response_data['context'] = array( 'intent' => $intent );
@@ -155,17 +155,17 @@ class ChatController {
 
 	private function fallback_response( array $products, array $intent ): string {
 		$count = count( $products );
-		$type  = $intent['product_type'] ?? 'محصول';
+		$type  = $intent['product_type'] ?? 'product';
 
 		$type_labels = array(
-			'wheel'   => 'رینگ',
-			'tire'    => 'لاستیک',
-			'battery' => 'باتری',
-			'parts'   => 'قطعه',
+			'wheel'   => 'wheel',
+			'tire'    => 'tire',
+			'battery' => 'battery',
+			'parts'   => 'part',
 		);
 
-		$label = $type_labels[ $type ] ?? 'محصول';
-		return sprintf( '%d %s مناسب پیدا کردم. نتایج رو برات نمایش می‌دم:', $count, $label );
+		$label = $type_labels[ $type ] ?? 'product';
+		return sprintf( 'I found %d matching %s(s). Here are the results:', $count, $label );
 	}
 
 	private function log_conversation(
