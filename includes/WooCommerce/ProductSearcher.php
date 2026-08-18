@@ -23,19 +23,14 @@ class ProductSearcher {
 	 * General search with multiple params.
 	 */
 	public function search( array $params ): array {
-		$intent       = $params['intent'] ?? 'smart_search';
 		$search_text  = $params['search_text'] ?? '';
 		$product_type = $params['product_type'] ?? null;
 		$vehicle      = $params['vehicle'] ?? null;
 		$attributes   = $params['attributes'] ?? array();
 		$limit        = (int) ( $params['limit'] ?? 20 );
 
-		if ( $intent === 'product_search' && $search_text ) {
-			return $this->text_search( $search_text, $limit );
-		}
-
+		// 1. Attribute / category filters (brand, PCD, size, etc.).
 		$filters = $this->build_attribute_filters( $product_type, $vehicle, $attributes );
-
 		if ( ! empty( $filters ) ) {
 			$products = $this->search_by_attributes( $filters, $limit );
 			if ( ! empty( $products ) ) {
@@ -43,13 +38,66 @@ class ProductSearcher {
 			}
 		}
 
-		// Fallback to text search.
+		// 2. Brand search (category or title) — critical when brand maps to product_cat.
+		if ( ! empty( $attributes['brand'] ) ) {
+			$products = $this->search_by_brand( $attributes['brand'], $product_type, $limit );
+			if ( ! empty( $products ) ) {
+				return $products;
+			}
+		}
+
+		// 3. Text search with full query.
+		if ( $search_text ) {
+			$products = $this->text_search( $search_text, $limit );
+			if ( ! empty( $products ) ) {
+				return $products;
+			}
+
+			// 4. Brand-only text fallback (e.g. "رینگ TRAILITE" → "TRAILITE").
+			if ( ! empty( $attributes['brand'] ) ) {
+				$products = $this->text_search( $attributes['brand'], $limit );
+				if ( ! empty( $products ) ) {
+					return $products;
+				}
+			}
+		}
+
+		// 5. Combined fallback query.
 		$fallback_query = $this->build_fallback_query( $product_type, $vehicle, $attributes, $search_text );
-		if ( $fallback_query ) {
-			return $this->text_search( $fallback_query, $limit );
+		if ( $fallback_query && $fallback_query !== $search_text ) {
+			$products = $this->text_search( $fallback_query, $limit );
+			if ( ! empty( $products ) ) {
+				return $products;
+			}
 		}
 
 		return array();
+	}
+
+	/**
+	 * Search products by brand name via category mapping or title match.
+	 */
+	public function search_by_brand( string $brand, ?string $product_type, int $limit = 20 ): array {
+		$mapping = Settings::get_attribute_mapping();
+
+		if ( ! empty( $mapping['brand'] ) ) {
+			$terms    = $this->find_matching_terms( $mapping['brand'], $brand );
+			$products = $this->search_by_attributes( array( $mapping['brand'] => $terms ), $limit );
+			if ( ! empty( $products ) ) {
+				return $products;
+			}
+		}
+
+		// Always try product_cat — brands are often stored as categories.
+		$cat_terms = $this->find_matching_terms( 'product_cat', $brand );
+		if ( ! empty( $cat_terms ) ) {
+			$products = $this->search_by_attributes( array( 'product_cat' => $cat_terms ), $limit );
+			if ( ! empty( $products ) ) {
+				return $products;
+			}
+		}
+
+		return $this->text_search( $brand, $limit );
 	}
 
 	/**
@@ -93,10 +141,47 @@ class ProductSearcher {
 		) );
 
 		if ( count( $words ) > 1 ) {
-			return $this->search_by_all_words( $words, $limit );
+			$products = $this->search_by_all_words( $words, $limit );
+			if ( ! empty( $products ) ) {
+				return $products;
+			}
+
+			// OR fallback: match any significant word (prefer brand-like tokens).
+			return $this->search_by_any_words( $words, $limit );
 		}
 
 		return array();
+	}
+
+	private function search_by_any_words( array $words, int $limit ): array {
+		$skip_words = array( 'رینگ', 'رینک', 'لاستیک', 'ring', 'wheel', 'tire', 'tyre', 'battery', 'باتری' );
+		$union      = array();
+
+		foreach ( $words as $word ) {
+			$word_lower = mb_strtolower( $word );
+			if ( mb_strlen( $word ) < 2 || in_array( $word_lower, $skip_words, true ) ) {
+				continue;
+			}
+
+			$ids = $this->run_text_search( $word, $limit * 2 );
+			foreach ( $ids as $product ) {
+				$union[ $product['id'] ] = $product['id'];
+			}
+
+			$cat_terms = $this->find_matching_terms( 'product_cat', $word );
+			if ( ! empty( $cat_terms ) ) {
+				$cat_products = $this->search_by_attributes( array( 'product_cat' => $cat_terms ), $limit );
+				foreach ( $cat_products as $product ) {
+					$union[ $product['id'] ] = $product['id'];
+				}
+			}
+		}
+
+		if ( empty( $union ) ) {
+			return array();
+		}
+
+		return $this->format_products( array_slice( array_values( $union ), 0, $limit ) );
 	}
 
 	private function run_text_search( string $query, int $limit ): array {

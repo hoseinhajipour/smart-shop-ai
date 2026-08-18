@@ -104,8 +104,9 @@ class ChatController {
 			'session_id'   => $session_id ?: wp_generate_uuid4(),
 		);
 
-		// Step 2: Check if followup needed.
-		if ( $intent['needs_followup'] && Settings::is_capability_enabled( 'ask_followup_questions' ) ) {
+		// Step 2: Check if followup needed (never skip search when brand is known).
+		$has_brand = ! empty( $intent['attributes']['brand'] );
+		if ( $intent['needs_followup'] && ! $has_brand && Settings::is_capability_enabled( 'ask_followup_questions' ) ) {
 			$response_data['needs_followup']     = true;
 			$response_data['followup_question']  = $intent['followup_question'];
 			$response_data['message']            = $intent['followup_question'];

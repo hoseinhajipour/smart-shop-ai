@@ -73,6 +73,7 @@ class IntentParser {
 			'needs_followup'   => (bool) ( $raw_intent['needs_followup'] ?? false ),
 			'followup_question'=> $raw_intent['followup_question'] ?? null,
 			'confidence'       => (float) ( $raw_intent['confidence'] ?? 0.5 ),
+			'original_message' => $raw_intent['original_message'] ?? null,
 		);
 
 		// Fallback keyword detection if AI missed it.
@@ -289,6 +290,73 @@ class IntentParser {
 		}
 
 		$intent = $this->adjust_wheel_followup( $intent );
+		$intent = $this->adjust_brand_followup( $intent );
+		$intent = $this->normalize_search_text( $intent );
+
+		return $intent;
+	}
+
+	/**
+	 * When brand is known, search immediately — don't ask followup questions.
+	 */
+	private function adjust_brand_followup( array $intent ): array {
+		$attrs = $intent['attributes'] ?? array();
+
+		if ( ! empty( $attrs['brand'] ) ) {
+			$intent['needs_followup'] = false;
+		}
+
+		$message = $intent['original_message'] ?? '';
+		if ( $message && $this->is_availability_question( $message ) ) {
+			if ( ! empty( $attrs['brand'] ) || ! empty( $intent['search_text'] ) ) {
+				$intent['needs_followup'] = false;
+			}
+		}
+
+		// Infer product type from message when brand is set.
+		if ( ! empty( $attrs['brand'] ) && empty( $intent['product_type'] ) && $message ) {
+			$detected = $this->detect_product_type_from_text( $message );
+			if ( $detected ) {
+				$intent['product_type'] = $detected;
+			}
+		}
+
+		return $intent;
+	}
+
+	private function is_availability_question( string $text ): bool {
+		$lower    = mb_strtolower( $text );
+		$patterns = array(
+			'دارین', 'دارید', 'داریم', 'موجود', 'have you', 'do you have',
+			'in stock', 'این محصول', 'this product', 'available',
+		);
+
+		foreach ( $patterns as $pattern ) {
+			if ( mb_strpos( $lower, $pattern ) !== false ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function normalize_search_text( array $intent ): array {
+		if ( ! empty( $intent['search_text'] ) ) {
+			$text = $intent['search_text'];
+			// Common Persian typo.
+			$text = str_replace( 'رینک', 'رینگ', $text );
+			$intent['search_text'] = $text;
+		}
+
+		if ( ! empty( $intent['original_message'] ) ) {
+			$msg = str_replace( 'رینک', 'رینگ', $intent['original_message'] );
+			if ( empty( $intent['product_type'] ) ) {
+				$detected = $this->detect_product_type_from_text( $msg );
+				if ( $detected ) {
+					$intent['product_type'] = $detected;
+				}
+			}
+		}
 
 		return $intent;
 	}

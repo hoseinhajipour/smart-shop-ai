@@ -119,6 +119,7 @@ IMPORTANT — Wheel/rim brands vs vehicles:
 - Never put wheel brand names in the "vehicle" field.
 - When user asks about a wheel brand (e.g. ARCHER), set attributes.brand and build search_text like "ARCHER 17" or "ARCHER KMC T9".
 - For wheels, vehicle (car model) is optional when brand + size or brand + style are known.
+- When user asks "do you have TRAILITE?" or "این محصول رو دارین؟" with a brand name, set needs_followup=false and search immediately.
 
 Wheel/tire fitment (CRITICAL for vehicle-based search):
 - Bolt Pattern / PCD (e.g. "6X139.7", "4x100") → attributes.pcd

@@ -38,9 +38,12 @@ class NormalSearch {
 		}
 
 		$mcp_result = $this->mcp->search_products( array(
-			'intent'      => 'product_search',
-			'search_text' => $search_text,
-			'limit'       => 20,
+			'intent'       => 'smart_search',
+			'search_text'  => $search_text,
+			'product_type' => $intent['product_type'] ?? null,
+			'vehicle'      => $intent['vehicle'] ?? null,
+			'attributes'   => $intent['attributes'] ?? array(),
+			'limit'        => 20,
 		) );
 
 		return array(
