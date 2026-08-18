@@ -254,7 +254,9 @@ class SettingsController {
 	}
 
 	public function get_chatbot_settings( WP_REST_Request $request ): WP_REST_Response {
-		return new WP_REST_Response( Settings::get_chatbot_settings(), 200 );
+		$settings = Settings::get_chatbot_settings();
+		$settings['default_quick_actions'] = Settings::get_default_quick_actions();
+		return new WP_REST_Response( $settings, 200 );
 	}
 
 	public function update_chatbot_settings( WP_REST_Request $request ): WP_REST_Response {
@@ -267,7 +269,7 @@ class SettingsController {
 			Settings::set( 'chatbot_welcome', sanitize_textarea_field( $params['welcome'] ) );
 		}
 		if ( isset( $params['quick_actions'] ) ) {
-			Settings::set( 'quick_actions', $params['quick_actions'] );
+			Settings::set( 'quick_actions', Settings::sanitize_quick_actions( $params['quick_actions'] ) );
 		}
 
 		// Appearance settings.

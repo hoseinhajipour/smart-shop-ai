@@ -60,6 +60,7 @@ class Activator {
 	}
 
 	private static function set_default_options(): void {
+		require_once SSAI_PLUGIN_DIR . 'includes/Core/Settings.php';
 		$defaults = array(
 			'ai_provider'       => 'openai',
 			'ai_endpoint'       => 'https://api.openai.com/v1/chat/completions',
@@ -75,8 +76,8 @@ class Activator {
 			'attribute_mapping' => array(),
 			'capabilities'      => self::default_capabilities(),
 			'chatbot_enabled'           => true,
-			'chatbot_welcome'           => 'Hi 👋 What product are you looking for?',
-			'quick_actions'             => self::default_quick_actions(),
+			'chatbot_welcome'           => Settings::get_default_welcome_message(),
+			'quick_actions'             => Settings::get_default_quick_actions(),
 			'chatbot_title'             => 'Shopping Assistant',
 			'chatbot_avatar_emoji'      => '🤖',
 			'chatbot_primary_color'     => '#4f46e5',
@@ -120,15 +121,6 @@ Respond in English with a friendly, professional tone.';
 			'recommend_products'      => true,
 			'ask_followup_questions'  => true,
 			'compare_products'        => false,
-		);
-	}
-
-	private static function default_quick_actions(): array {
-		return array(
-			array( 'icon' => '🚗', 'label' => 'Find wheels', 'query' => 'I need wheels for my car' ),
-			array( 'icon' => '🔋', 'label' => 'Find a battery', 'query' => 'I need a battery for my car' ),
-			array( 'icon' => '🛞', 'label' => 'Find tires', 'query' => 'I need tires for my car' ),
-			array( 'icon' => '🔎', 'label' => 'Search products', 'query' => 'Search products' ),
 		);
 	}
 }

@@ -72,11 +72,68 @@ class Settings {
 	public static function get_chatbot_settings(): array {
 		return array(
 			'enabled'       => (bool) self::get( 'chatbot_enabled', true ),
-			'welcome'       => self::get( 'chatbot_welcome', '' ),
-			'quick_actions' => self::get( 'quick_actions', array() ),
+			'welcome'       => self::get( 'chatbot_welcome', self::get_default_welcome_message() ),
+			'quick_actions' => self::get_quick_actions(),
 			'appearance'    => self::get_chatbot_appearance(),
 			'float_button'  => self::get_float_button_settings(),
 		);
+	}
+
+	public static function get_default_welcome_message(): string {
+		return 'Hi 👋 What product are you looking for?';
+	}
+
+	/**
+	 * @return array<int, array{icon:string,label:string,query:string}>
+	 */
+	public static function get_default_quick_actions(): array {
+		return array(
+			array( 'icon' => '🚗', 'label' => 'Find wheels', 'query' => 'I need wheels for my car' ),
+			array( 'icon' => '🔋', 'label' => 'Find a battery', 'query' => 'I need a battery for my car' ),
+			array( 'icon' => '🛞', 'label' => 'Find tires', 'query' => 'I need tires for my car' ),
+			array( 'icon' => '🔎', 'label' => 'Search products', 'query' => 'Search products' ),
+		);
+	}
+
+	/**
+	 * @return array<int, array{icon:string,label:string,query:string}>
+	 */
+	public static function get_quick_actions(): array {
+		$actions = self::get( 'quick_actions', array() );
+		return is_array( $actions ) && ! empty( $actions ) ? $actions : self::get_default_quick_actions();
+	}
+
+	/**
+	 * @param mixed $actions
+	 * @return array<int, array{icon:string,label:string,query:string}>
+	 */
+	public static function sanitize_quick_actions( $actions ): array {
+		if ( ! is_array( $actions ) ) {
+			return array();
+		}
+
+		$sanitized = array();
+		foreach ( $actions as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+
+			$label = sanitize_text_field( $action['label'] ?? '' );
+			$query = sanitize_text_field( $action['query'] ?? '' );
+			$icon  = sanitize_text_field( $action['icon'] ?? '' );
+
+			if ( '' === $label && '' === $query ) {
+				continue;
+			}
+
+			$sanitized[] = array(
+				'icon'  => mb_substr( $icon, 0, 4 ),
+				'label' => $label,
+				'query' => $query,
+			);
+		}
+
+		return $sanitized;
 	}
 
 	public static function get_chatbot_appearance(): array {

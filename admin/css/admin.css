@@ -248,6 +248,68 @@
   transform: scale(1.1);
 }
 
+.ssai-quick-actions-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ssai-quick-action-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 1.4fr 36px;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.ssai-quick-action-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #50575e;
+}
+
+.ssai-quick-action-icon input {
+  width: 56px;
+  text-align: center;
+}
+
+.ssai-remove-quick-action {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  line-height: 1;
+  font-size: 20px;
+}
+
+.ssai-quick-actions-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ssai-preview-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.ssai-preview-quick-action {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  font-size: 11px;
+  color: #374151;
+}
+
 /* Live Preview */
 .ssai-preview-panel {
   position: sticky;
@@ -414,5 +476,9 @@
 
   .ssai-preview-panel {
     position: static;
+  }
+
+  .ssai-quick-action-row {
+    grid-template-columns: 1fr;
   }
 }

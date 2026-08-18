@@ -49,6 +49,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</tr>
 				</table>
 
+				<h2><?php esc_html_e( 'Quick Actions', 'smart-shop-ai' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Shortcut buttons shown below the welcome message. Each button sends a prompt to the assistant.', 'smart-shop-ai' ); ?></p>
+				<div id="ssai-quick-actions-editor" class="ssai-quick-actions-editor"></div>
+				<p class="ssai-quick-actions-toolbar">
+					<button type="button" id="ssai-add-quick-action" class="button"><?php esc_html_e( 'Add Quick Action', 'smart-shop-ai' ); ?></button>
+					<button type="button" id="ssai-reset-quick-actions" class="button"><?php esc_html_e( 'Reset to Defaults', 'smart-shop-ai' ); ?></button>
+				</p>
+
 				<h2><?php esc_html_e( 'Appearance & Colors', 'smart-shop-ai' ); ?></h2>
 				<table class="form-table">
 					<tr>
@@ -152,8 +160,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							</div>
 						</div>
 						<div class="ssai-preview-messages">
-							<div class="ssai-preview-msg bot">Hi 👋 How can I help you today?</div>
+							<div class="ssai-preview-msg bot" id="ssai-preview-welcome">Hi 👋 How can I help you today?</div>
 							<div class="ssai-preview-msg user">I need wheels for my car</div>
+							<div id="ssai-preview-quick-actions" class="ssai-preview-quick-actions"></div>
 							<div class="ssai-preview-typing">
 								<span class="ssai-preview-avatar-sm">🤖</span>
 								<span class="ssai-typing-dots"><span></span><span></span><span></span></span>

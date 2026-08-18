@@ -405,8 +405,81 @@
     const preview = document.getElementById('ssai-chatbot-preview');
     const previewFloatBtn = document.getElementById('ssai-preview-float-btn');
     const previewWindow = preview ? preview.querySelector('.ssai-preview-window') : null;
+    const quickActionsEditor = document.getElementById('ssai-quick-actions-editor');
+    const previewQuickActions = document.getElementById('ssai-preview-quick-actions');
+    const previewWelcome = document.getElementById('ssai-preview-welcome');
+    let defaultQuickActions = [
+      { icon: '🚗', label: 'Find wheels', query: 'I need wheels for my car' },
+      { icon: '🔋', label: 'Find a battery', query: 'I need a battery for my car' },
+      { icon: '🛞', label: 'Find tires', query: 'I need tires for my car' },
+      { icon: '🔎', label: 'Search products', query: 'Search products' },
+    ];
 
     const FLOAT_ICONS = { chat: '💬', robot: '🤖', help: '❓', sparkle: '✨', cart: '🛒' };
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+
+    function renderQuickActionsEditor(actions) {
+      if (!quickActionsEditor) return;
+      quickActionsEditor.innerHTML = '';
+
+      (actions || []).forEach((action, index) => {
+        const row = document.createElement('div');
+        row.className = 'ssai-quick-action-row';
+        row.innerHTML =
+          '<div class="ssai-quick-action-field ssai-quick-action-icon">' +
+            '<label>Icon</label>' +
+            '<input type="text" class="small-text ssai-quick-action-input" data-field="icon" maxlength="4" value="' + escapeHtml(action.icon || '') + '" />' +
+          '</div>' +
+          '<div class="ssai-quick-action-field ssai-quick-action-label">' +
+            '<label>Button Label</label>' +
+            '<input type="text" class="regular-text ssai-quick-action-input" data-field="label" value="' + escapeHtml(action.label || '') + '" />' +
+          '</div>' +
+          '<div class="ssai-quick-action-field ssai-quick-action-query">' +
+            '<label>Prompt</label>' +
+            '<input type="text" class="large-text ssai-quick-action-input" data-field="query" value="' + escapeHtml(action.query || '') + '" />' +
+          '</div>' +
+          '<button type="button" class="button ssai-remove-quick-action" data-index="' + index + '" aria-label="Remove quick action">&times;</button>';
+
+        quickActionsEditor.appendChild(row);
+      });
+
+      quickActionsEditor.querySelectorAll('.ssai-quick-action-input').forEach((input) => {
+        input.addEventListener('input', updatePreview);
+      });
+
+      quickActionsEditor.querySelectorAll('.ssai-remove-quick-action').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const actions = getQuickActions();
+          actions.splice(parseInt(btn.dataset.index, 10), 1);
+          renderQuickActionsEditor(actions);
+          updatePreview();
+        });
+      });
+    }
+
+    function getQuickActions() {
+      if (!quickActionsEditor) return [];
+
+      const rows = quickActionsEditor.querySelectorAll('.ssai-quick-action-row');
+      const actions = [];
+
+      rows.forEach((row) => {
+        const icon = row.querySelector('[data-field="icon"]')?.value.trim() || '';
+        const label = row.querySelector('[data-field="label"]')?.value.trim() || '';
+        const query = row.querySelector('[data-field="query"]')?.value.trim() || '';
+
+        if (!label && !query) return;
+
+        actions.push({ icon, label, query });
+      });
+
+      return actions;
+    }
 
     function getAppearance() {
       return {
@@ -465,6 +538,19 @@
       if (header) header.style.background = 'linear-gradient(135deg, ' + app.primary_color + ', ' + app.secondary_color + ')';
       if (messages) messages.style.background = app.background_color;
       if (previewWindow) previewWindow.style.borderRadius = app.border_radius + 'px';
+      if (previewWelcome) {
+        previewWelcome.textContent = document.getElementById('chatbot_welcome').value || 'Hi 👋 What product are you looking for?';
+      }
+
+      if (previewQuickActions) {
+        previewQuickActions.innerHTML = '';
+        getQuickActions().forEach((action) => {
+          const btn = document.createElement('span');
+          btn.className = 'ssai-preview-quick-action';
+          btn.textContent = (action.icon ? action.icon + ' ' : '') + (action.label || action.query);
+          previewQuickActions.appendChild(btn);
+        });
+      }
 
       previewFloatBtn.className = 'ssai-preview-float-btn ssai-anim-' + flt.animation;
       previewFloatBtn.style.width = flt.size + 'px';
@@ -501,9 +587,25 @@
       el.addEventListener('change', updatePreview);
     });
 
+    document.getElementById('ssai-add-quick-action')?.addEventListener('click', () => {
+      const actions = getQuickActions();
+      actions.push({ icon: '✨', label: 'New action', query: '' });
+      renderQuickActionsEditor(actions);
+      updatePreview();
+    });
+
+    document.getElementById('ssai-reset-quick-actions')?.addEventListener('click', () => {
+      renderQuickActionsEditor(defaultQuickActions.slice());
+      updatePreview();
+    });
+
     api('/settings/chatbot').then((data) => {
+      if (data.default_quick_actions) {
+        defaultQuickActions = data.default_quick_actions;
+      }
       if (data.enabled) document.getElementById('chatbot_enabled').checked = true;
       if (data.welcome) document.getElementById('chatbot_welcome').value = data.welcome;
+      renderQuickActionsEditor(data.quick_actions || defaultQuickActions);
 
       const app = data.appearance || {};
       if (app.title) document.getElementById('chatbot_title').value = app.title;
@@ -541,6 +643,7 @@
       const body = {
         enabled: document.getElementById('chatbot_enabled').checked,
         welcome: document.getElementById('chatbot_welcome').value,
+        quick_actions: getQuickActions(),
         appearance: getAppearance(),
         float_button: getFloatButton(),
       };
