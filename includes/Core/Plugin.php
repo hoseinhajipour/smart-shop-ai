@@ -37,6 +37,7 @@ class Plugin {
 		require_once $base . 'Core/ConversationLogger.php';
 
 		require_once $base . 'AI/AIProviderInterface.php';
+		require_once $base . 'AI/Providers/AbstractAIProvider.php';
 		require_once $base . 'AI/Providers/OpenAIProvider.php';
 		require_once $base . 'AI/Providers/AnthropicProvider.php';
 		require_once $base . 'AI/Providers/GeminiProvider.php';
