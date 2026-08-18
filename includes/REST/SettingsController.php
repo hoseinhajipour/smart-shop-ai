@@ -165,6 +165,8 @@ class SettingsController {
 		if ( ! empty( $settings['api_key'] ) ) {
 			$settings['api_key_masked'] = substr( $settings['api_key'], 0, 4 ) . '...' . substr( $settings['api_key'], -4 );
 		}
+		$settings['presets']          = Settings::get_ai_provider_presets();
+		$settings['custom_endpoints'] = Settings::get_custom_endpoint_presets();
 		return new WP_REST_Response( $settings, 200 );
 	}
 
@@ -176,6 +178,12 @@ class SettingsController {
 			$key = str_replace( 'ai_', '', $field );
 			if ( isset( $params[ $key ] ) || isset( $params[ $field ] ) ) {
 				$value = $params[ $key ] ?? $params[ $field ];
+				if ( 'ai_endpoint' === $field ) {
+					$value = esc_url_raw( $value );
+				}
+				if ( 'ai_provider' === $field ) {
+					$value = sanitize_text_field( $value );
+				}
 				Settings::set( $field, $value );
 			}
 		}
@@ -253,6 +261,59 @@ class SettingsController {
 		}
 		if ( isset( $params['quick_actions'] ) ) {
 			Settings::set( 'quick_actions', $params['quick_actions'] );
+		}
+
+		// Appearance settings.
+		$appearance = $params['appearance'] ?? array();
+		if ( ! empty( $appearance ) ) {
+			$appearance_map = array(
+				'title'             => 'chatbot_title',
+				'avatar_emoji'      => 'chatbot_avatar_emoji',
+				'primary_color'     => 'chatbot_primary_color',
+				'secondary_color'   => 'chatbot_secondary_color',
+				'user_bubble_color' => 'chatbot_user_bubble_color',
+				'bot_bubble_color'  => 'chatbot_bot_bubble_color',
+				'background_color'  => 'chatbot_background_color',
+				'border_radius'     => 'chatbot_border_radius',
+				'font_size'         => 'chatbot_font_size',
+			);
+			foreach ( $appearance_map as $key => $option ) {
+				if ( isset( $appearance[ $key ] ) ) {
+					$value = $appearance[ $key ];
+					if ( str_contains( $option, 'color' ) ) {
+						$value = sanitize_hex_color( $value ) ?: $value;
+					} elseif ( in_array( $key, array( 'border_radius', 'font_size' ), true ) ) {
+						$value = (int) $value;
+					} else {
+						$value = sanitize_text_field( $value );
+					}
+					Settings::set( $option, $value );
+				}
+			}
+		}
+
+		// Float button settings.
+		$float = $params['float_button'] ?? array();
+		if ( ! empty( $float ) ) {
+			$float_map = array(
+				'position'  => 'float_button_position',
+				'icon'      => 'float_button_icon',
+				'animation' => 'float_button_animation',
+				'offset_x'  => 'float_button_offset_x',
+				'offset_y'  => 'float_button_offset_y',
+				'size'      => 'float_button_size',
+			);
+			foreach ( $float_map as $key => $option ) {
+				if ( isset( $float[ $key ] ) ) {
+					$value = $float[ $key ];
+					if ( in_array( $key, array( 'offset_x', 'offset_y', 'size' ), true ) ) {
+						$value = (int) $value;
+					} else {
+						$value = sanitize_text_field( $value );
+					}
+					Settings::set( $option, $value );
+				}
+			}
 		}
 
 		return new WP_REST_Response( array( 'success' => true ), 200 );

@@ -35,7 +35,11 @@ class AIService {
 				return new AnthropicProvider( $settings );
 			case 'gemini':
 				return new GeminiProvider( $settings );
+			case 'openrouter':
+			case 'groq':
+			case 'together':
 			case 'openai_compatible':
+			case 'custom':
 				return new OpenAICompatibleProvider( $settings );
 			case 'openai':
 			default:

@@ -5,21 +5,30 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+use SmartShopAI\Core\Settings;
+
+$float_settings = Settings::get_float_button_settings();
+$appearance     = Settings::get_chatbot_appearance();
+$position       = in_array( $float_settings['position'], array( 'left', 'right' ), true ) ? $float_settings['position'] : 'right';
+$animation      = sanitize_html_class( $float_settings['animation'] );
 ?>
-<div id="ssai-chatbot-root" class="ssai-chatbot-root" dir="rtl">
-	<button id="ssai-chat-toggle" class="ssai-chat-toggle" aria-label="باز کردن چت">
-		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-			<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-		</svg>
+<div id="ssai-chatbot-root" class="ssai-chatbot-root ssai-position-<?php echo esc_attr( $position ); ?>" dir="rtl" aria-live="polite">
+	<button id="ssai-chat-toggle" class="ssai-chat-toggle ssai-anim-<?php echo esc_attr( $animation ); ?>" aria-label="باز کردن چت" aria-expanded="false">
+		<span class="ssai-toggle-icon" aria-hidden="true"></span>
+		<span class="ssai-toggle-ring" aria-hidden="true"></span>
 	</button>
 
-	<div id="ssai-chat-window" class="ssai-chat-window" hidden>
+	<div id="ssai-chat-window" class="ssai-chat-window" hidden role="dialog" aria-label="چت با دستیار خرید">
 		<div class="ssai-chat-header">
 			<div class="ssai-chat-header-info">
-				<span class="ssai-chat-avatar">🤖</span>
+				<div class="ssai-chat-avatar-wrap">
+					<span class="ssai-chat-avatar" id="ssai-chat-avatar"><?php echo esc_html( $appearance['avatar_emoji'] ); ?></span>
+					<span class="ssai-avatar-pulse" aria-hidden="true"></span>
+				</div>
 				<div>
-					<strong>دستیار خرید</strong>
-					<span class="ssai-chat-status">آنلاین</span>
+					<strong id="ssai-chat-title"><?php echo esc_html( $appearance['title'] ); ?></strong>
+					<span class="ssai-chat-status" id="ssai-chat-status">آنلاین</span>
 				</div>
 			</div>
 			<button id="ssai-chat-close" class="ssai-chat-close" aria-label="بستن">&times;</button>
@@ -30,9 +39,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div id="ssai-quick-actions" class="ssai-quick-actions"></div>
 
 		<div class="ssai-chat-input-area">
-			<input type="text" id="ssai-chat-input" class="ssai-chat-input" placeholder="سؤال خود را بنویسید..." autocomplete="off" />
+			<div class="ssai-input-wrapper">
+				<input type="text" id="ssai-chat-input" class="ssai-chat-input" placeholder="سؤال خود را بنویسید..." autocomplete="off" />
+				<span class="ssai-input-focus-ring" aria-hidden="true"></span>
+			</div>
 			<button id="ssai-chat-send" class="ssai-chat-send" aria-label="ارسال">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 					<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
 				</svg>
 			</button>

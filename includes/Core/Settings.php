@@ -74,6 +74,92 @@ class Settings {
 			'enabled'       => (bool) self::get( 'chatbot_enabled', true ),
 			'welcome'       => self::get( 'chatbot_welcome', '' ),
 			'quick_actions' => self::get( 'quick_actions', array() ),
+			'appearance'    => self::get_chatbot_appearance(),
+			'float_button'  => self::get_float_button_settings(),
+		);
+	}
+
+	public static function get_chatbot_appearance(): array {
+		return array(
+			'title'              => self::get( 'chatbot_title', 'دستیار خرید' ),
+			'avatar_emoji'       => self::get( 'chatbot_avatar_emoji', '🤖' ),
+			'primary_color'      => self::get( 'chatbot_primary_color', '#4f46e5' ),
+			'secondary_color'    => self::get( 'chatbot_secondary_color', '#7c3aed' ),
+			'user_bubble_color'  => self::get( 'chatbot_user_bubble_color', '#4f46e5' ),
+			'bot_bubble_color'   => self::get( 'chatbot_bot_bubble_color', '#ffffff' ),
+			'background_color'   => self::get( 'chatbot_background_color', '#f8f9fb' ),
+			'border_radius'      => (int) self::get( 'chatbot_border_radius', 16 ),
+			'font_size'          => (int) self::get( 'chatbot_font_size', 14 ),
+		);
+	}
+
+	public static function get_float_button_settings(): array {
+		return array(
+			'position'    => self::get( 'float_button_position', 'right' ),
+			'icon'        => self::get( 'float_button_icon', 'chat' ),
+			'animation'   => self::get( 'float_button_animation', 'pulse' ),
+			'offset_x'    => (int) self::get( 'float_button_offset_x', 24 ),
+			'offset_y'    => (int) self::get( 'float_button_offset_y', 24 ),
+			'size'        => (int) self::get( 'float_button_size', 56 ),
+		);
+	}
+
+	/**
+	 * Preset AI provider configurations.
+	 */
+	public static function get_ai_provider_presets(): array {
+		return array(
+			'openai' => array(
+				'label'    => 'OpenAI',
+				'endpoint' => 'https://api.openai.com/v1/chat/completions',
+				'model'    => 'gpt-4o-mini',
+			),
+			'anthropic' => array(
+				'label'    => 'Anthropic (Claude)',
+				'endpoint' => 'https://api.anthropic.com/v1/messages',
+				'model'    => 'claude-3-5-sonnet-20241022',
+			),
+			'gemini' => array(
+				'label'    => 'Google Gemini',
+				'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+				'model'    => 'gemini-2.0-flash',
+			),
+			'openrouter' => array(
+				'label'    => 'OpenRouter',
+				'endpoint' => 'https://openrouter.ai/api/v1/chat/completions',
+				'model'    => 'openai/gpt-4o-mini',
+			),
+			'groq' => array(
+				'label'    => 'Groq',
+				'endpoint' => 'https://api.groq.com/openai/v1/chat/completions',
+				'model'    => 'llama-3.3-70b-versatile',
+			),
+			'together' => array(
+				'label'    => 'Together AI',
+				'endpoint' => 'https://api.together.xyz/v1/chat/completions',
+				'model'    => 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+			),
+			'custom' => array(
+				'label'    => 'Custom Endpoint',
+				'endpoint' => '',
+				'model'    => '',
+			),
+		);
+	}
+
+	/**
+	 * Popular custom endpoint URLs for selection.
+	 */
+	public static function get_custom_endpoint_presets(): array {
+		return array(
+			'https://api.openai.com/v1/chat/completions'           => 'OpenAI API',
+			'https://openrouter.ai/api/v1/chat/completions'        => 'OpenRouter',
+			'https://api.groq.com/openai/v1/chat/completions'    => 'Groq',
+			'https://api.together.xyz/v1/chat/completions'         => 'Together AI',
+			'https://api.deepseek.com/v1/chat/completions'       => 'DeepSeek',
+			'https://api.mistral.ai/v1/chat/completions'           => 'Mistral AI',
+			'https://api.perplexity.ai/chat/completions'           => 'Perplexity',
+			'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions' => 'Alibaba DashScope',
 		);
 	}
 }
