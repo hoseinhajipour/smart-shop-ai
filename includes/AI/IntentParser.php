@@ -59,6 +59,7 @@ class IntentParser {
 	private const WHEEL_BRANDS = array(
 		'archer', 'kmc', 'rays', 'bbs', 'enkei', 'oz racing', 'oz', 'work',
 		'vossen', 'rotiform', 'fuel', 'american racing', 'method', 'black rhino',
+		'trailite',
 	);
 
 	public function parse( array $raw_intent ): array {
@@ -292,6 +293,32 @@ class IntentParser {
 		$intent = $this->adjust_wheel_followup( $intent );
 		$intent = $this->adjust_brand_followup( $intent );
 		$intent = $this->normalize_search_text( $intent );
+		$intent = $this->infer_brand_from_message( $intent );
+
+		return $intent;
+	}
+
+	/**
+	 * Extract wheel brand from message when AI omitted it (e.g. "TRAILITE این محصول رو دارین؟").
+	 */
+	private function infer_brand_from_message( array $intent ): array {
+		$attrs = $intent['attributes'] ?? array();
+		if ( ! empty( $attrs['brand'] ) ) {
+			return $intent;
+		}
+
+		$message = $intent['original_message'] ?? '';
+		if ( '' === $message ) {
+			return $intent;
+		}
+
+		if ( preg_match( '/\b([A-Z][A-Z0-9]{2,})\b/u', $message, $matches ) ) {
+			$intent['attributes']['brand'] = $matches[1];
+			if ( empty( $intent['search_text'] ) ) {
+				$intent['search_text'] = $matches[1];
+			}
+			$intent['needs_followup'] = false;
+		}
 
 		return $intent;
 	}

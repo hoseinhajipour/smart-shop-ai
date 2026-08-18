@@ -55,16 +55,14 @@ class ReplicateProvider implements AIProviderInterface {
 		}
 
 		$input = $this->build_input( $messages, $options );
-		$body  = array(
-			'version' => $this->model,
-			'input'   => $input,
-		);
+		$body  = $this->build_request_body( $input );
+		$endpoint = $this->get_predictions_endpoint();
 
-		$wait_seconds = min( 60, max( 1, $this->timeout ) );
+		$wait_seconds = min( 30, max( 1, $this->timeout ) );
 		$response     = wp_remote_post(
-			$this->get_predictions_endpoint(),
+			$endpoint,
 			array(
-				'timeout' => $this->timeout + 15,
+				'timeout' => min( 45, $wait_seconds + 15 ),
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $this->api_key,
 					'Content-Type'  => 'application/json',
@@ -181,6 +179,9 @@ class ReplicateProvider implements AIProviderInterface {
 			);
 		}
 
+		// Remove consecutive duplicate messages (history + current message overlap).
+		$chat_messages = $this->dedupe_consecutive_messages( $chat_messages );
+
 		if ( ! empty( $options['response_format']['type'] ) && 'json_object' === $options['response_format']['type'] ) {
 			$system_prompt .= ( '' === $system_prompt ? '' : "\n\n" ) . 'You must respond with valid JSON only. Do not wrap the JSON in markdown fences.';
 		}
@@ -201,13 +202,36 @@ class ReplicateProvider implements AIProviderInterface {
 		return $input;
 	}
 
-	private function get_predictions_endpoint(): string {
-		if ( ! empty( $this->endpoint ) ) {
-			return $this->endpoint;
+	/**
+	 * @param array<int, array{role:string,content:string}> $messages
+	 * @return array<int, array{role:string,content:string}>
+	 */
+	private function dedupe_consecutive_messages( array $messages ): array {
+		$deduped = array();
+
+		foreach ( $messages as $message ) {
+			$last = end( $deduped );
+			if (
+				$last &&
+				$last['role'] === $message['role'] &&
+				$last['content'] === $message['content']
+			) {
+				continue;
+			}
+			$deduped[] = $message;
 		}
 
+		return $deduped;
+	}
+
+	private function get_predictions_endpoint(): string {
+		// owner/model format → official models predictions endpoint.
 		if ( false !== strpos( $this->model, '/' ) ) {
 			return self::API_BASE . '/models/' . $this->model . '/predictions';
+		}
+
+		if ( ! empty( $this->endpoint ) ) {
+			return $this->endpoint;
 		}
 
 		return self::API_BASE . '/predictions';
@@ -274,6 +298,11 @@ class ReplicateProvider implements AIProviderInterface {
 				return trim( $output['text'] );
 			}
 
+			// Streaming token array from Replicate (e.g. openai/gpt-5.6-terra).
+			if ( $this->is_token_stream_array( $output ) ) {
+				return trim( implode( '', $output ) );
+			}
+
 			$parts = array();
 			foreach ( $output as $item ) {
 				if ( is_string( $item ) ) {
@@ -294,5 +323,46 @@ class ReplicateProvider implements AIProviderInterface {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Detect Replicate streaming output: ["{", "intent", "\":\"", ...]
+	 *
+	 * @param array<int, mixed> $output
+	 */
+	private function is_token_stream_array( array $output ): bool {
+		if ( empty( $output ) ) {
+			return false;
+		}
+
+		foreach ( $output as $item ) {
+			if ( ! is_string( $item ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Build request body — models API uses {input}, predictions API uses {version, input}.
+	 *
+	 * @param array<string, mixed> $input
+	 * @return array<string, mixed>
+	 */
+	private function build_request_body( array $input ): array {
+		if ( $this->uses_models_endpoint() ) {
+			return array( 'input' => $input );
+		}
+
+		return array(
+			'version' => $this->model,
+			'input'   => $input,
+		);
+	}
+
+	private function uses_models_endpoint(): bool {
+		return false !== strpos( $this->model, '/' )
+			&& false !== strpos( $this->get_predictions_endpoint(), '/models/' );
 	}
 }

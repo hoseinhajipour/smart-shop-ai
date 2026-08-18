@@ -161,7 +161,7 @@
     addMessage(text, 'user');
     showTypingIndicator();
 
-    conversationHistory.push({ role: 'user', content: text });
+    const historyForApi = conversationHistory.slice(-10);
 
     try {
       const response = await apiRequest('/chat', {
@@ -169,10 +169,12 @@
         body: JSON.stringify({
           message: text,
           session_id: sessionId,
-          history: conversationHistory.slice(-10),
+          history: historyForApi,
           context: conversationContext,
         }),
       });
+
+      conversationHistory.push({ role: 'user', content: text });
 
       removeTypingIndicator();
 
@@ -203,7 +205,8 @@
       removeTypingIndicator();
       setAvatarState('idle');
       setStatus('Online');
-      addMessage('Something went wrong. Please try again.', 'bot');
+      const errText = err && err.message ? err.message : 'Unknown error';
+      addMessage('Something went wrong: ' + errText, 'bot');
       console.error('SSAI Chat error:', err);
     }
 
@@ -439,11 +442,14 @@
       headers: { ...headers, ...(options.headers || {}) },
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      throw new Error('API request failed: ' + response.status);
+      const errMsg = data.message || data.error || ('Request failed (' + response.status + ')');
+      throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
     }
 
-    return response.json();
+    return data;
   }
 
   // Allow external vehicle selector to pass fitment data (bolt pattern, offset, rim size).

@@ -132,13 +132,20 @@ Wheel/tire fitment (CRITICAL for vehicle-based search):
 PROMPT;
 
 		$messages = array();
+		$last_history_content = null;
 		foreach ( $conversation_history as $msg ) {
+			$content = $msg['content'] ?? '';
+			if ( $content === $user_message ) {
+				$last_history_content = $content;
+			}
 			$messages[] = array(
 				'role'    => $msg['role'],
-				'content' => $msg['content'],
+				'content' => $content,
 			);
 		}
-		$messages[] = array( 'role' => 'user', 'content' => $user_message );
+		if ( $last_history_content !== $user_message ) {
+			$messages[] = array( 'role' => 'user', 'content' => $user_message );
+		}
 
 		$result = $this->provider->chat(
 			array_merge(
@@ -167,10 +174,18 @@ PROMPT;
 			}
 		}
 
+		if ( ! is_array( $parsed ) || empty( $parsed ) ) {
+			return array(
+				'success' => false,
+				'error'   => 'Could not parse AI intent response.',
+				'data'    => array(),
+			);
+		}
+
 		return array(
 			'success' => true,
 			'error'   => '',
-			'data'    => is_array( $parsed ) ? $parsed : array(),
+			'data'    => $parsed,
 		);
 	}
 

@@ -53,6 +53,21 @@ class ChatController {
 	public function handle_chat( WP_REST_Request $request ): WP_REST_Response {
 		$start_time = microtime( true );
 
+		try {
+			return $this->process_chat( $request, $start_time );
+		} catch ( \Throwable $e ) {
+			return new WP_REST_Response(
+				array(
+					'error'   => 'Chat processing failed.',
+					'message' => $e->getMessage(),
+				),
+				500
+			);
+		}
+	}
+
+	private function process_chat( WP_REST_Request $request, float $start_time ): WP_REST_Response {
+
 		$message    = sanitize_textarea_field( $request->get_param( 'message' ) );
 		$session_id = sanitize_text_field( $request->get_param( 'session_id' ) );
 		$history    = $request->get_param( 'history' ) ?: array();
